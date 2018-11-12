@@ -8,8 +8,12 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type TaskType string
+
+type Task struct {
+	ID string `json:"id"`
+	Type TaskType `json:"tasktype"`
+}
 
 const (
 	OptimizeImage = "optimize_image"
@@ -19,6 +23,7 @@ const (
 	ExtractMostSignificantImage = "extract_most_significant_image"
 )
 
+var tasks []Task
 
 func main() {
 	router := mux.NewRouter()
@@ -26,13 +31,6 @@ func main() {
 	router.HandleFunc("/tasks", NewTask).Methods("POST")
 	log.Println(http.ListenAndServe(":8080", router))
 }
-
-type Task struct {
-	ID string `json:"id"`
-	Type TaskType `json:"tasktype"`
-}
-
-var tasks []Task
 
 func GetTasks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tasks)
