@@ -2,10 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"github.com/google/uuid"
+	faktory "github.com/contribsys/faktory/client"
 )
 
 type TaskType string
@@ -42,4 +43,15 @@ func NewTask(w http.ResponseWriter, r * http.Request) {
 	task.ID = uuid.New().String()
 	tasks = append(tasks, task)
 	json.NewEncoder(w).Encode(tasks)
+
+	publishToFactory(&task)
+}
+
+func publishToFactory(t *Task) {
+	client, err := faktory.Open()
+	log.Println(err)
+	job := faktory.NewJob("SomeJob", &t)
+	err = client.Push(job)
+	log.Println(err)
+	log.Println("published task to factory")
 }
