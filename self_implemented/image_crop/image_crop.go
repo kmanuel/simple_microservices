@@ -27,7 +27,7 @@ type Request struct {
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/crop", CropImage).Methods("POST")
-	log.Println(http.ListenAndServe(":8080", router))
+	log.Println(http.ListenAndServe(":8081", router))
 }
 
 func CropImage(w http.ResponseWriter, r * http.Request) {
