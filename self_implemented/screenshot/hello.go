@@ -32,7 +32,7 @@ func takeScreenShot(url string) {
 	jsPath := "./lib/js/screenshot.js"
 	logFile := "screenshot.log"
 
-	cmd := exec.Command(phantomJSBin, jsPath, url, "./output/testoutput.jpg", logFile, chromeUserAgent)
+	cmd := exec.Command(phantomJSBin, jsPath, url, "/app/output/testoutput.jpg", logFile, chromeUserAgent)
 
 	if err := cmd.Run(); nil != err {
 		log.Printf("process job err - %s\n", err.Error())
