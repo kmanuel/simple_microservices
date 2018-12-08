@@ -13,6 +13,9 @@ import (
 	"os"
 )
 
+const InputImageLocation = "../test/input/"
+const OutputImageLocation = "../test/output/"
+
 type Request struct {
 	In string `json:"in,omitempty"`
 	Out string `json:"out,omitempty"`
@@ -31,7 +34,7 @@ func CropImage(w http.ResponseWriter, r * http.Request) {
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
 
-	f, _ := os.Open(task.In)
+	f, _ := os.Open(InputImageLocation + task.In)
 	img, _, _ := image.Decode(f)
 
 	analyzer := smartcrop.NewAnalyzer(nfnt.NewDefaultResizer())
@@ -45,7 +48,7 @@ func CropImage(w http.ResponseWriter, r * http.Request) {
 	}
 	croppedImg := img.(SubImager).SubImage(topCrop)
 
-	f, err := os.Create(task.Out)
+	f, err := os.Create(OutputImageLocation + task.Out)
 	if err != nil {
 		panic(err)
 	}

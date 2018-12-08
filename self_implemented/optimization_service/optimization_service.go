@@ -13,6 +13,9 @@ import (
 "os"
 )
 
+const InputImageLocation = "../test/input/"
+const OutputImageLocation = "../test/output/"
+
 type Request struct {
 	In string `json:"in,omitempty"`
 	Out string `json:"out,omitempty"`
