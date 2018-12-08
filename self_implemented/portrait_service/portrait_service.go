@@ -18,7 +18,6 @@ type Request struct {
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
 	Perc   int    `json:"perc"`
-	Square int    `json:"square"`
 	Scale  int    `json:"scale"`
 	Blur   int    `json:"blur"`
 	Sobel  int    `json:"sobel"`
@@ -29,33 +28,45 @@ type Request struct {
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/crop", ExtractPortrait).Methods("POST")
+	router.HandleFunc("/crop", HandleRequest).Methods("POST")
 	log.Println(http.ListenAndServe(":8081", router))
 }
 
-func ExtractPortrait(w http.ResponseWriter, r *http.Request) {
+func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("received request")
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
 
-	log.Println(task)
+	inputLocation := InputImageLocation + task.In
+	outputLocation := OutputImageLocation + task.Out
+
+	err := ExtractPortrait(inputLocation, outputLocation, task.Width, task.Height)
+
+	log.Printf("Command finished with error: %v", err)
+}
+
+func ExtractPortrait(
+	inputLocation string,
+	outputLocation string,
+	width int,
+	height int) error {
 
 	cmd := exec.Command(
 		"caire",
-		"-in", InputImageLocation+task.In,
-		"-out", OutputImageLocation+task.Out,
-		"-width="+strconv.Itoa(task.Width),
-		"-height="+strconv.Itoa(task.Height),
+		"-in", inputLocation,
+		"-out", outputLocation,
+		"-width="+strconv.Itoa(width),
+		"-height="+strconv.Itoa(height),
 		"-perc=1",
-		"-square="+strconv.Itoa(task.Square),
-		"-scale="+strconv.Itoa(task.Scale),
-		"-blur="+strconv.Itoa(task.Blur),
-		"-sobel="+strconv.Itoa(task.Sobel),
-		"-debug="+strconv.Itoa(task.Debug),
-		"-face="+strconv.Itoa(task.Face),
+		"-square=0",
+		"-scale=1",
+		"-blur=0",
+		"-sobel=0",
+		"-debug=0",
+		"-face=1",
 		"-cc=./data/facefinder",
 	)
 	log.Println(cmd)
 	err := cmd.Run()
-	log.Printf("Command finished with error: %v", err)
+	return err
 }
