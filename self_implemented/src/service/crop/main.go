@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/minioconnector"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 	"image"
@@ -11,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"simple_microservices/self_implemented/src/minioconnector"
 )
 
 type Request struct {
@@ -21,6 +22,8 @@ type Request struct {
 }
 
 func main() {
+	fmt.Println("running")
+
 	minioconnector.Init()
 
 	router := mux.NewRouter()
@@ -29,6 +32,8 @@ func main() {
 }
 
 func handleRequest(w http.ResponseWriter, r * http.Request) {
+	fmt.Println("received request")
+
 	request := parseRequest(w, r)
 	downloadedFilePath := DownloadFile(request.In)
 	croppedFilePath := CropImage(downloadedFilePath, request.Width, request.Height)
