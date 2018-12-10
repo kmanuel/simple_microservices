@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os/exec"
-	"self_implemented/src/minioconnector"
+	"simple_microservices/self_implemented/src/minioconnector"
 )
 
 type Request struct {
@@ -15,7 +16,6 @@ type Request struct {
 
 func main() {
 	minioconnector.Init()
-	minioconnector.UploadFile("./test.jpg")
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", HandleRequest).Methods("POST")
@@ -27,18 +27,24 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
 
-	takeScreenShot(task.Url)
+	outputFilePath := takeScreenShot(task.Url)
+
+	minioconnector.UploadFile(outputFilePath)
 }
 
-func takeScreenShot(url string) {
+func takeScreenShot(url string) string {
 	chromeUserAgent := "Mozilla/5.0 (Windows NT 6.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36"
 	phantomJSBin := "./lib/bin/phantomjs"
-	jsPath := "./lib/js/screenshot_service.js"
+	jsPath := "./lib/js/screenshot.js"
 	logFile := "screenshot_service.log"
 
-	cmd := exec.Command(phantomJSBin, jsPath, url, "/app/output/testoutput.jpg", logFile, chromeUserAgent)
+	outputFilePath := "/tmp/output" + uuid.New().String() + ".jpg"
+
+	cmd := exec.Command(phantomJSBin, jsPath, url, outputFilePath, logFile, chromeUserAgent)
 
 	if err := cmd.Run(); nil != err {
 		log.Printf("process job err - %s\n", err.Error())
 	}
+
+	return outputFilePath
 }

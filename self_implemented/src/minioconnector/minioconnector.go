@@ -1,6 +1,7 @@
 package minioconnector
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/minio/minio-go"
@@ -10,19 +11,10 @@ import (
 
 const minioHost = "localhost:9000"
 const useSsl = false
+
 var accessKey string
 var secretKey string
 var bucketName string
-
-//func main() {
-//	println("hello")
-//	godotenv.Load()
-//	accessKey = os.Getenv("MINIO_ACCESS_KEY")
-//	secretKey = os.Getenv("MINIO_SECRET_KEY")
-//	bucketName = os.Getenv("BUCKET_NAME")
-//
-//	UploadFile("./test.jpg")
-//}
 
 func Init() {
 	godotenv.Load()
@@ -30,6 +22,25 @@ func Init() {
 	secretKey = os.Getenv("MINIO_SECRET_KEY")
 	bucketName = os.Getenv("BUCKET_NAME")
 
+}
+
+func DownloadFile(objectName string, downloadPath string) {
+	client, err := minio.New(
+		minioHost,
+		accessKey,
+		secretKey,
+		useSsl)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = client.FGetObject(bucketName, objectName, downloadPath, minio.GetObjectOptions{})
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 func UploadFile(filePath string) {
