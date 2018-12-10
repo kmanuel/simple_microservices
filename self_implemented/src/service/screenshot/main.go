@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"self_implemented/src/minioconnector"
 )
 
 type Request struct {
@@ -13,6 +14,9 @@ type Request struct {
 }
 
 func main() {
+	minioconnector.Init()
+	minioconnector.UploadFile("./test.jpg")
+
 	router := mux.NewRouter()
 	router.HandleFunc("/", HandleRequest).Methods("POST")
 	log.Println(http.ListenAndServe(":8083", router))
