@@ -2,15 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os/exec"
+	"simple_microservices/self_implemented/src/minioconnector"
 	"strconv"
 )
-
-const InputImageLocation = "../test/input/"
-const OutputImageLocation = "../test/output/"
 
 type Request struct {
 	In     string `json:"in,omitempty"`
@@ -27,6 +26,8 @@ type Request struct {
 }
 
 func main() {
+	minioconnector.Init()
+
 	router := mux.NewRouter()
 	router.HandleFunc("/crop", HandleRequest).Methods("POST")
 	log.Println(http.ListenAndServe(":8081", router))
@@ -37,24 +38,26 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
 
-	inputLocation := InputImageLocation + task.In
-	outputLocation := OutputImageLocation + task.Out
+	downloadedFilePath := minioconnector.DownloadFile(task.In)
 
-	err := ExtractPortrait(inputLocation, outputLocation, task.Width, task.Height)
+	outputFilePath := ExtractPortrait(downloadedFilePath, task.Width, task.Height)
 
-	log.Printf("Command finished with error: %v", err)
+	minioconnector.UploadFile(outputFilePath)
+
+	log.Printf("Command finished")
 }
 
 func ExtractPortrait(
 	inputLocation string,
-	outputLocation string,
 	width int,
-	height int) error {
+	height int) string {
+
+	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
 
 	cmd := exec.Command(
 		"caire",
 		"-in", inputLocation,
-		"-out", outputLocation,
+		"-out", outputFilePath,
 		"-width="+strconv.Itoa(width),
 		"-height="+strconv.Itoa(height),
 		"-perc=1",
@@ -66,7 +69,7 @@ func ExtractPortrait(
 		"-face=1",
 		"-cc=./data/facefinder",
 	)
-	log.Println(cmd)
-	err := cmd.Run()
-	return err
+	cmd.Run()
+
+	return outputFilePath
 }
