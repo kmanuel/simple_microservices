@@ -44,10 +44,7 @@ func parseRequest(w http.ResponseWriter, r *http.Request) Request {
 	return task
 }
 func DownloadFile(objectName string) string {
-	outputFilePath := "/tmp/downloaded" + uuid.New().String() + ".jpg"
-	minioconnector.DownloadFile(objectName, outputFilePath)
-
-	return outputFilePath
+	return minioconnector.DownloadFile(objectName)
 }
 
 func CropImage(inputImg string, width int, height int) string {

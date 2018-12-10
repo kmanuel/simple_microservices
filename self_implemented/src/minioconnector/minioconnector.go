@@ -24,7 +24,9 @@ func Init() {
 
 }
 
-func DownloadFile(objectName string, downloadPath string) {
+func DownloadFile(objectName string) string {
+	outputFilePath := "/tmp/downloaded" + uuid.New().String() + ".jpg"
+
 	client, err := minio.New(
 		minioHost,
 		accessKey,
@@ -35,12 +37,13 @@ func DownloadFile(objectName string, downloadPath string) {
 		log.Fatalln(err)
 	}
 
-	err = client.FGetObject(bucketName, objectName, downloadPath, minio.GetObjectOptions{})
+	err = client.FGetObject(bucketName, objectName, outputFilePath, minio.GetObjectOptions{})
 
 	if err != nil {
 		fmt.Println(err)
-		return
 	}
+
+	return outputFilePath
 }
 
 func UploadFile(filePath string) {
