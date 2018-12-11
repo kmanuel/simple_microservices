@@ -5,6 +5,7 @@ import (
 	"github.com/advancedlogic/GoOse"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"io"
 	"log"
@@ -15,16 +16,20 @@ import (
 const OutputImageLocation = "/tmp/"
 
 type Request struct {
-	In     string `json:"in,omitempty"`
-	Out    string `json:"out,omitempty"`
+	In     string `json:"url,omitempty"`
 }
 
 func main() {
-	minioconnector.Init()
+	godotenv.Load()
+	minioconnector.Init(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", HandleRequest).Methods("POST")
-	log.Println(http.ListenAndServe(":8086", router))
+	log.Println(http.ListenAndServe(":8080", router))
 }
 
 func HandleRequest(w http.ResponseWriter, r *http.Request) {

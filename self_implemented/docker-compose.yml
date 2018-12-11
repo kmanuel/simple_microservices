@@ -23,3 +23,55 @@ services:
     image: grafana/grafana
     ports:
       - "3000:3000"
+
+  crop:
+    build:
+      context: src/service/crop
+    ports:
+      - "8081:8080"
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+
+  most_significant_image:
+    build:
+      context: src/service/most_significant_image
+    ports:
+      - "8082:8080"
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+
+  optimization:
+    build:
+      context: src/service/optimization
+    ports:
+      - "8083:8080"
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+
+  portrait:
+    build:
+      context: src/service/portrait
+    ports:
+      - "8084:8080"
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+
+  screenshot:
+    build:
+      context: src/service/screenshot
+    ports:
+      - "8085:8080"
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+
+

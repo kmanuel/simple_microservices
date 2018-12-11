@@ -3,24 +3,27 @@ package minioconnector
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 	"github.com/minio/minio-go"
 	"log"
-	"os"
 )
 
-const minioHost = "localhost:9000"
 const useSsl = false
 
+var minioHost string
 var accessKey string
 var secretKey string
 var bucketName string
 
-func Init() {
-	godotenv.Load()
-	accessKey = os.Getenv("MINIO_ACCESS_KEY")
-	secretKey = os.Getenv("MINIO_SECRET_KEY")
-	bucketName = os.Getenv("BUCKET_NAME")
+func Init(
+	minioHostArg string,
+	accessKeyArg string,
+	secretKeyArg string,
+	bucketNameArg string) {
+
+	minioHost = minioHostArg
+	accessKey = accessKeyArg
+	secretKey = secretKeyArg
+	bucketName = bucketNameArg
 
 }
 

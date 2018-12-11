@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 )
 
@@ -15,11 +17,16 @@ type Request struct {
 }
 
 func main() {
-	minioconnector.Init()
+	godotenv.Load()
+	minioconnector.Init(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", HandleRequest).Methods("POST")
-	log.Println(http.ListenAndServe(":8083", router))
+	log.Println(http.ListenAndServe(":8080", router))
 }
 
 func HandleRequest(w http.ResponseWriter, r *http.Request) {

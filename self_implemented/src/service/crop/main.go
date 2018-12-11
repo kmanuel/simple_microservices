@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
@@ -15,20 +16,25 @@ import (
 )
 
 type Request struct {
-	In string `json:"in,omitempty"`
-	Width int `json:"width"`
-	Height int `json:"height"`
+	In     string `json:"in,omitempty"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 func main() {
-	minioconnector.Init()
+	godotenv.Load()
+	minioconnector.Init(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", handleRequest).Methods("POST")
-	log.Println(http.ListenAndServe(":8082", router))
+	log.Println(http.ListenAndServe(":8080", router))
 }
 
-func handleRequest(w http.ResponseWriter, r * http.Request) {
+func handleRequest(w http.ResponseWriter, r *http.Request) {
 	request := parseRequest(w, r)
 	downloadedFilePath := DownloadFile(request.In)
 	croppedFilePath := CropImage(downloadedFilePath, request.Width, request.Height)

@@ -7,3 +7,5 @@ COPY . .
 
 RUN go get ./
 RUN go build
+
+ENTRYPOINT ["go", "run", "main.go"]

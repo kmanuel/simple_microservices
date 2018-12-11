@@ -14,7 +14,15 @@ WORKDIR /tmp
 COPY lib .
 RUN cd ./jpegoptim-1.4.6 && ./configure && make && make install
 
-RUN mkdir /images && mkdir /images/input
 
-WORKDIR  /images/input
-ENTRYPOINT ["image_optim", "test1.jpg"]
+
+
+RUN mkdir $GOPATH/src/app
+WORKDIR $GOPATH/src/app
+
+COPY . .
+
+RUN go get ./
+RUN go build
+
+ENTRYPOINT ["go", "run", "main.go"]]
