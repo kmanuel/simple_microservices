@@ -1,25 +1,25 @@
 package main
 
 import (
-"encoding/json"
-"fmt"
+	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-"github.com/muesli/smartcrop"
-"github.com/muesli/smartcrop/nfnt"
-"image"
-"image/jpeg"
-"log"
-"net/http"
-"os"
-	"simple_microservices/self_implemented/src/minioconnector"
+	"github.com/muesli/smartcrop"
+	"github.com/muesli/smartcrop/nfnt"
+	"github.com/kmanuel/minioconnector"
+	"image"
+	"image/jpeg"
+	"log"
+	"net/http"
+	"os"
 )
 
 type Request struct {
-	In string `json:"in,omitempty"`
-	Out string `json:"out,omitempty"`
-	Width int `json:"width"`
-	Height int `json:"height"`
+	In     string `json:"in,omitempty"`
+	Out    string `json:"out,omitempty"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 func main() {
@@ -30,7 +30,7 @@ func main() {
 	log.Println(http.ListenAndServe(":8082", router))
 }
 
-func HandleRequest(w http.ResponseWriter, r * http.Request) {
+func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("received request")
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
@@ -66,4 +66,3 @@ func optimizeImage(inputFile string) string {
 
 	return outputFilePath
 }
-

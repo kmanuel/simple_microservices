@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/kmanuel/minioconnector"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 	"image"
@@ -11,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"simple_microservices/self_implemented/src/minioconnector"
 )
 
 type Request struct {

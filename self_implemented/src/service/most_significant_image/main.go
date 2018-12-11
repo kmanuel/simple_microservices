@@ -5,11 +5,11 @@ import (
 	"github.com/advancedlogic/GoOse"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/kmanuel/minioconnector"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"simple_microservices/self_implemented/src/minioconnector"
 )
 
 const OutputImageLocation = "/tmp/"

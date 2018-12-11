@@ -1,7 +1,7 @@
 FROM golang
 
-RUN mkdir /app
-WORKDIR /app
+RUN mkdir $GOPATH/src/app
+WORKDIR $GOPATH/src/app
 
 COPY . .
 

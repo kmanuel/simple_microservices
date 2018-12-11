@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/kmanuel/minioconnector"
 	"log"
 	"net/http"
 	"os/exec"
-	"simple_microservices/self_implemented/src/minioconnector"
 )
 
 type Request struct {
