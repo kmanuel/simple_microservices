@@ -8,9 +8,9 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
+	log "github.com/sirupsen/logrus"
 	"image"
 	"image/jpeg"
-	"log"
 	"net/http"
 	"os"
 )
@@ -31,16 +31,17 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", handleRequest).Methods("POST")
-	log.Println(http.ListenAndServe(":8080", router))
+	log.Info(http.ListenAndServe(":8080", router))
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
+	log.Info("received new request")
 	request := parseRequest(w, r)
 	downloadedFilePath := DownloadFile(request.In)
 	croppedFilePath := CropImage(downloadedFilePath, request.Width, request.Height)
 	minioconnector.UploadFile(croppedFilePath)
 
-	log.Printf("finished")
+	log.Info("finished request handling")
 }
 
 func parseRequest(w http.ResponseWriter, r *http.Request) Request {
@@ -54,6 +55,8 @@ func DownloadFile(objectName string) string {
 }
 
 func CropImage(inputImg string, width int, height int) string {
+	log.Info("starting to crop image")
+
 	outputFilePath := "/tmp/downloaded" + uuid.New().String() + ".jpg"
 
 	f, _ := os.Open(inputImg)
@@ -71,5 +74,6 @@ func CropImage(inputImg string, width int, height int) string {
 	defer f.Close()
 	jpeg.Encode(f, croppedImg, nil)
 
+	log.Info("finished cropping image")
 	return outputFilePath
 }

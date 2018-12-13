@@ -53,7 +53,7 @@ func NewTask(w http.ResponseWriter, r *http.Request) {
 
 	log.WithFields(log.Fields{
 		"taskID": t.ID,
-	}).Info("finished task handling for taskId" + t.ID)
+	}).Info("finished task handling")
 	//publishToFactory(&t)
 }
 

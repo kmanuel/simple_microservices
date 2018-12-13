@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/exec"
@@ -37,10 +37,11 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", HandleRequest).Methods("POST")
-	log.Println(http.ListenAndServe(":8080", router))
+	log.Info(http.ListenAndServe(":8080", router))
 }
 
 func HandleRequest(w http.ResponseWriter, r *http.Request) {
+	log.Info("received request")
 	json.NewEncoder(w).Encode("received request")
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
@@ -51,13 +52,15 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 
 	minioconnector.UploadFile(outputFilePath)
 
-	log.Printf("Command finished")
+	log.Info("finished request")
 }
 
 func ExtractPortrait(
 	inputLocation string,
 	width int,
 	height int) string {
+
+	log.Info("extracting portrait")
 
 	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
 
@@ -78,5 +81,6 @@ func ExtractPortrait(
 	)
 	cmd.Run()
 
+	log.Info("extracted portrait")
 	return outputFilePath
 }

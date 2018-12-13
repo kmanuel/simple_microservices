@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/exec"
@@ -26,11 +26,11 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", HandleRequest).Methods("POST")
-	log.Println(http.ListenAndServe(":8080", router))
+	log.Info(http.ListenAndServe(":8080", router))
 }
 
 func HandleRequest(w http.ResponseWriter, r *http.Request) {
-	log.Println("received request")
+	log.Info("received request")
 	json.NewEncoder(w).Encode("received request")
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)
@@ -38,9 +38,13 @@ func HandleRequest(w http.ResponseWriter, r *http.Request) {
 	outputFilePath := takeScreenShot(task.Url)
 
 	minioconnector.UploadFile(outputFilePath)
+
+	log.Info("finished request")
 }
 
 func takeScreenShot(url string) string {
+	log.WithField("url", url).Info("taking screenshot")
+
 	chromeUserAgent := "Mozilla/5.0 (Windows NT 6.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36"
 	phantomJSBin := "./lib/bin/phantomjs"
 	jsPath := "./lib/js/screenshot.js"
@@ -53,6 +57,8 @@ func takeScreenShot(url string) string {
 	if err := cmd.Run(); nil != err {
 		log.Printf("process job err - %s\n", err.Error())
 	}
+
+	log.WithField("url", url).Info("took screenshot")
 
 	return outputFilePath
 }
