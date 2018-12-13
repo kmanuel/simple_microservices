@@ -30,6 +30,7 @@ func main() {
 }
 
 func HandleRequest(w http.ResponseWriter, r *http.Request) {
+	log.Println("received request")
 	json.NewEncoder(w).Encode("received request")
 	var task Request
 	_ = json.NewDecoder(r.Body).Decode(&task)

@@ -11,4 +11,6 @@ COPY . .
 RUN go get ./
 RUN go build
 
+EXPOSE 8080
+
 ENTRYPOINT ["go", "run", "main.go"]
