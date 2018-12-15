@@ -11,6 +11,8 @@ COPY . .
 RUN go get ./
 RUN go build
 
+ENV FAKTORY_URL tcp://faktory:7419
+
 EXPOSE 8080
 
 ENTRYPOINT ["go", "run", "main.go"]

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	faktory "github.com/contribsys/faktory/client"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -22,7 +23,7 @@ const (
 	CropImage                   = "crop"
 	FaceDetection               = "face_detection"
 	Screenshot                  = "screenshot"
-	ExtractMostSignificantImage = "extract_most_significant_image"
+	ExtractMostSignificantImage = "most_significant_image"
 )
 
 var tasks []Task
@@ -54,7 +55,7 @@ func NewTask(w http.ResponseWriter, r *http.Request) {
 	log.WithFields(log.Fields{
 		"taskID": t.ID,
 	}).Info("finished task handling")
-	//publishToFactory(&t)
+	publishToFactory(&t)
 }
 
 func dispatchTask(t *Task) {
@@ -141,11 +142,13 @@ func (t *Task) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//func publishToFactory(t *Task) {
-//	client, err := faktory.Open()
-//	log.Println(err)
-//	job := faktory.NewJob("SomeJob", &t)
-//	err = client.Push(job)
-//	log.Println(err)
-//	log.Println("published task to factory")
-//}
+func publishToFactory(t *Task) {
+	client, err := faktory.Open()
+	log.Println(err)
+	job := faktory.NewJob(t.Type, &t.TaskParams)
+	job.Queue = t.Type
+	job.Custom = t.TaskParams
+	err = client.Push(job)
+	log.Println(err)
+	log.Println("published task to factory")
+}

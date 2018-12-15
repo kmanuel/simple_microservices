@@ -53,6 +53,7 @@ services:
   optimization:
     build:
       context: src/service/optimization
+    env_file: .env
     depends_on:
       - "minio"
       - "faktory"
