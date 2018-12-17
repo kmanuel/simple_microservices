@@ -1,15 +1,21 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	faktory "github.com/contribsys/faktory/client"
-	"github.com/gorilla/mux"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	"github.com/julienschmidt/httprouter"
+	"github.com/kmanuel/minioconnector"
+	"github.com/manyminds/api2go"
+	"github.com/manyminds/api2go/examples/resolver"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"strings"
+	"os"
 )
 
 type Task struct {
@@ -18,28 +24,62 @@ type Task struct {
 	TaskParams map[string]interface{} `json:"taskParams"`
 }
 
-const (
-	OptimizeImage               = "optimize"
-	CropImage                   = "crop"
-	FaceDetection               = "face_detection"
-	Screenshot                  = "screenshot"
-	ExtractMostSignificantImage = "most_significant_image"
-)
+type UploadResponse struct {
+	FileId	string	`json:"fileId"`
+}
 
 var tasks []Task
 
 func main() {
-	router := mux.NewRouter()
-	router.HandleFunc("/tasks", GetTasks).Methods("GET")
-	router.HandleFunc("/tasks", NewTask).Methods("POST")
-	log.Info(http.ListenAndServe(":8080", router))
+	godotenv.Load()
+	minioconnector.Init(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
+
+	port := 8080
+	api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: port})
+
+	handler := api.Handler().(*httprouter.Router)
+	handler.GET("/tasks", GetTasks)
+	handler.POST("/tasks", NewTask)
+	handler.POST("/upload", UploadFile)
+
+	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 }
 
-func GetTasks(w http.ResponseWriter, r *http.Request) {
+func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log.Info("incoming file upload request")
+	r.ParseMultipartForm(32 << 20)
+	file, handler, err := r.FormFile("uploadfile")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+	f, err := os.OpenFile("/tmp/" + handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	io.Copy(f, file)
+
+	uploadedFileName := minioconnector.UploadFile("/tmp/" + handler.Filename)
+
+	var uploadResponse UploadResponse
+	uploadResponse.FileId = uploadedFileName
+
+	json.NewEncoder(w).Encode(uploadResponse)
+
+}
+
+func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(tasks)
 }
 
-func NewTask(w http.ResponseWriter, r *http.Request) {
+func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Info("received request for new task")
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -50,71 +90,16 @@ func NewTask(w http.ResponseWriter, r *http.Request) {
 	var t Task
 	_ = t.UnmarshalJSON(body)
 
-	dispatchTask(&t)
+	t.ID = uuid.New().String()
 
 	log.WithFields(log.Fields{
 		"taskID": t.ID,
 	}).Info("finished task handling")
 	publishToFactory(&t)
-}
 
-func dispatchTask(t *Task) {
-	log.WithFields(log.Fields{
-		"taskID": t.ID,
-		"type": t.Type,
-	}).Info("dispatching new Task")
-
-	switch t.Type {
-	case FaceDetection:
-		taskParameters := ExtractTaskParameters(t)
-		http.Post("portrait:8080", "application/json", bytes.NewBuffer([]byte(taskParameters)))
-		break
-	case CropImage:
-		taskParameters := ExtractTaskParameters(t)
-		http.Post("http://crop:8080", "application/json", bytes.NewBuffer([]byte(taskParameters)))
-		break
-	case Screenshot:
-		taskParameters := ExtractTaskParameters(t)
-		http.Post("http://screenshot:8080", "application/json", bytes.NewBuffer([]byte(taskParameters)))
-		break
-	case OptimizeImage:
-		taskParameters := ExtractTaskParameters(t)
-		http.Post("http://optimize:8080", "application/json", bytes.NewBuffer([]byte(taskParameters)))
-		break
-	case ExtractMostSignificantImage:
-		taskParameters := ExtractTaskParameters(t)
-		http.Post("http://most_significant_image:8080", "application/json", bytes.NewBuffer([]byte(taskParameters)))
-		break
-	default:
-		log.WithFields(log.Fields{
-		"taskID": t.ID,
-		}).Warn("no handler found for task")
-	}
-	log.WithFields(log.Fields{
-		"taskID": t.ID,
-	}).Debug("Dispatching of task finished for task with ID=" + t.ID)
-}
-
-func ExtractTaskParameters(t *Task) string {
-	log.WithFields(log.Fields{
-		"taskID": t.ID,
-	}).Debug("extracting parameters from task")
-
-	var params []string
-	for key, val := range t.TaskParams {
-		if key != "id" && key != "tasktype" {
-			t.TaskParams[key] = val
-			param := `"` + key + `": "` + `"` + val.(string) + `"`
-			params = append(params, param)
-		}
-	}
-	jsonString := `{` + strings.Join(params, ", \n") + `}`
-
-	log.WithFields(log.Fields{
-		"taskID": t.ID,
-	}).Debug("extracted task parameters" + jsonString + " from task with ID=" + t.ID)
-
-	return jsonString
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	json.NewEncoder(w).Encode(t)
 }
 
 func (t *Task) UnmarshalJSON(data []byte) error {

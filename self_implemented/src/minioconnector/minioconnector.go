@@ -49,7 +49,7 @@ func DownloadFile(objectName string) string {
 	return outputFilePath
 }
 
-func UploadFile(filePath string) {
+func UploadFile(filePath string) string {
 	client, err := minio.New(
 		minioHost,
 		accessKey,
@@ -84,6 +84,8 @@ func UploadFile(filePath string) {
 	}
 
 	log.WithField("objectName", objectName).Info("Successfully uploaded %s of size %d\n", objectName, n)
+
+	return objectName
 }
 
 func createBucket(err error, client *minio.Client, bucketName string) {
