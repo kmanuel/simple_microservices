@@ -24,6 +24,16 @@ services:
     ports:
       - "3000:3000"
 
+  postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=example
+      - POSTGRES_PASSWORD=example
+      - POSTGRES_DB=simple_ms
+    env_file: .env
+
   gateway:
     build:
       context: gateway
@@ -33,6 +43,12 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
+
+  request_service:
+    build:
+      context: src/request_service
+    depends_on:
+      - "postgres"
 
   crop:
     build:

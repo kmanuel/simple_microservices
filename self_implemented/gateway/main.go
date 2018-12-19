@@ -2,15 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	faktory "github.com/contribsys/faktory/client"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/model"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/resolver"
 	"github.com/manyminds/api2go"
-	"github.com/manyminds/api2go/examples/resolver"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -18,17 +18,11 @@ import (
 	"os"
 )
 
-type Task struct {
-	ID         string                 `json:"id"`
-	Type       string                 `json:"tasktype"`
-	TaskParams map[string]interface{} `json:"taskParams"`
-}
-
 type UploadResponse struct {
-	FileId	string	`json:"fileId"`
+	FileId string `json:"fileId"`
 }
 
-var tasks []Task
+var tasks []model.Task
 
 func main() {
 	godotenv.Load()
@@ -58,7 +52,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	defer file.Close()
-	f, err := os.OpenFile("/tmp/" + handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile("/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -87,7 +81,7 @@ func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		panic(err)
 	}
 
-	var t Task
+	var t model.Task
 	_ = t.UnmarshalJSON(body)
 
 	t.ID = uuid.New().String()
@@ -102,32 +96,7 @@ func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(t)
 }
 
-func (t *Task) UnmarshalJSON(data []byte) error {
-	var jsonMap map[string]interface{}
-
-	if t == nil {
-		return errors.New("RawString: UnmarshalJSON on nil pointer")
-	}
-
-	if err := json.Unmarshal(data, &jsonMap); err != nil {
-		return err
-	}
-
-	t.ID = jsonMap["id"].(string)
-	t.Type = jsonMap["tasktype"].(string)
-
-	t.TaskParams = make(map[string]interface{})
-
-	for key, val := range jsonMap {
-		if key != "id" && key != "tasktype" {
-			t.TaskParams[key] = val
-		}
-	}
-
-	return nil
-}
-
-func publishToFactory(t *Task) {
+func publishToFactory(t *model.Task) {
 	client, err := faktory.Open()
 	log.Println(err)
 	job := faktory.NewJob(t.Type, &t.TaskParams)
