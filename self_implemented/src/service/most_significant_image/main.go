@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/service/most_significant_image/update_status"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -62,11 +63,15 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	if !ok {
 		log.Error("couldnt convert args[0]")
 	} else {
+		update_status.NotifyAboutProcessingStart(strings["id"].(string))
+
 		outputFile := OutputImageLocation + uuid.New().String() + ".jpg"
 
 		ExtractMostSignificantImage(strings["url"].(string), outputFile)
 
 		minioconnector.UploadFile(outputFile)
+
+		update_status.NotifyAboutCompletion(strings["id"].(string))
 	}
 
 	return nil

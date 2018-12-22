@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/service/screenshot/update_status"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -62,12 +63,19 @@ func startFaktory() {
 
 func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
+
+
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
 		log.Error("couldnt convert args[0]")
 	} else {
 		log.Error("url: ", strings["url"])
+
+		update_status.NotifyAboutProcessingStart(strings["id"].(string))
+
 		takeScreenShot(strings["url"].(string))
+
+		update_status.NotifyAboutCompletion(strings["id"].(string))
 	}
 
 	return nil

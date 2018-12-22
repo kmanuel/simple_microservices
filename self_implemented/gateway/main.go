@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	faktory "github.com/contribsys/faktory/client"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	"github.com/kmanuel/minioconnector"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/model"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/resolver"
 	"github.com/manyminds/api2go"
 	log "github.com/sirupsen/logrus"
@@ -18,11 +19,21 @@ import (
 	"os"
 )
 
+type Task struct {
+	ID         string
+	Type       string                 `json:"tasktype"`
+	TaskParams map[string]interface{} `json:"taskParams"`
+}
+
+type NewTaskType struct {
+	Id string `json:"id"`
+}
+
 type UploadResponse struct {
 	FileId string `json:"fileId"`
 }
 
-var tasks []model.Task
+var tasks []Task
 
 func main() {
 	godotenv.Load()
@@ -80,14 +91,16 @@ func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if err != nil {
 		panic(err)
 	}
+	taskId := uuid.New().String()
 
-	var t model.Task
+	sendToRequestService(taskId)
+
+	var t Task
 	_ = t.UnmarshalJSON(body)
 
-	t.ID = uuid.New().String()
+	t.ID = taskId
 
 	log.WithFields(log.Fields{
-		"taskID": t.ID,
 	}).Info("finished task handling")
 	publishToFactory(&t)
 
@@ -96,13 +109,48 @@ func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	json.NewEncoder(w).Encode(t)
 }
 
-func publishToFactory(t *model.Task) {
+func sendToRequestService(taskId string) {
+	var nt NewTaskType
+	nt.Id = taskId
+	marshal, e := json.Marshal(nt)
+	if e != nil {
+		panic(e)
+	}
+	http.Post("http://request_service:8080/tasks", "application/json", bytes.NewBuffer([]byte(marshal)))
+}
+
+func publishToFactory(t *Task) {
 	client, err := faktory.Open()
 	log.Println(err)
 	job := faktory.NewJob(t.Type, &t.TaskParams)
 	job.Queue = t.Type
+	t.TaskParams["id"] = t.ID
 	job.Custom = t.TaskParams
 	err = client.Push(job)
 	log.Println(err)
 	log.Println("published task to factory")
+}
+
+func (t *Task) UnmarshalJSON(data []byte) error {
+	var jsonMap map[string]interface{}
+
+	if t == nil {
+		return errors.New("RawString: UnmarshalJSON on nil pointer")
+	}
+
+	if err := json.Unmarshal(data, &jsonMap); err != nil {
+		return err
+	}
+
+	t.Type = jsonMap["tasktype"].(string)
+
+	t.TaskParams = make(map[string]interface{})
+
+	for key, val := range jsonMap {
+		if key != "id" && key != "tasktype" {
+			t.TaskParams[key] = val
+		}
+	}
+
+	return nil
 }

@@ -1,13 +1,13 @@
 package main
 
 import (
-	"encoding/json"
+	faktory "github.com/contribsys/faktory/client"
+	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/service/portrait/update_status"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -15,16 +15,8 @@ import (
 
 type Request struct {
 	In     string `json:"in,omitempty"`
-	Out    string `json:"out,omitempty"`
 	Width  int    `json:"width"`
 	Height int    `json:"height"`
-	Perc   int    `json:"perc"`
-	Scale  int    `json:"scale"`
-	Blur   int    `json:"blur"`
-	Sobel  int    `json:"sobel"`
-	Debug  int    `json:"debug"`
-	Face   int    `json:"face"`
-	Cc     string `json:"cc"`
 }
 
 func main() {
@@ -35,24 +27,54 @@ func main() {
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
 
-	router := mux.NewRouter()
-	router.HandleFunc("/", HandleRequest).Methods("POST")
-	log.Info(http.ListenAndServe(":8080", router))
+	startFaktory()
 }
 
-func HandleRequest(w http.ResponseWriter, r *http.Request) {
-	log.Info("received request")
-	json.NewEncoder(w).Encode("received request")
-	var task Request
-	_ = json.NewDecoder(r.Body).Decode(&task)
+func startFaktory() {
+	mgr := worker.NewManager()
+	mgr.Use(func(perform worker.Handler) worker.Handler {
+		return func(ctx worker.Context, job *faktory.Job) error {
+			log.Printf("Starting work on job %s of type %s with custom %v\n", ctx.Jid(), ctx.JobType(), job.Custom)
+			err := perform(ctx, job)
+			log.Printf("Finished work on job %s with error %v\n", ctx.Jid(), err)
+			return err
+		}
+	})
+	mgr.Register("portrait", convertTask)
+	mgr.Queues = []string{"portrait"}
+	var quit bool
+	mgr.On(worker.Shutdown, func() {
+		quit = true
+	})
+	// Start processing jobs, this method does not return
+	mgr.Run()
+}
 
-	downloadedFilePath := minioconnector.DownloadFile(task.In)
 
-	outputFilePath := ExtractPortrait(downloadedFilePath, task.Width, task.Height)
+func convertTask(ctx worker.Context, args ...interface{}) error {
+	log.Info("Working on job %s\n", ctx.Jid())
 
-	minioconnector.UploadFile(outputFilePath)
+	strings, ok := args[0].(map[string]interface{})
+	if !ok {
+		log.Error("couldnt convert args[0]")
+	} else {
+		update_status.NotifyAboutProcessingStart(strings["id"].(string))
 
-	log.Info("finished request")
+		inputLocation := strings["in"].(string)
+
+		downloadedFilePath := minioconnector.DownloadFile(inputLocation)
+
+		width, _ := strconv.Atoi(strings["width"].(string))
+		height, _ := strconv.Atoi(strings["height"].(string))
+
+		outputFilePath := ExtractPortrait(downloadedFilePath, width, height)
+
+		minioconnector.UploadFile(outputFilePath)
+
+		update_status.NotifyAboutCompletion(strings["id"].(string))
+	}
+
+	return nil
 }
 
 func ExtractPortrait(

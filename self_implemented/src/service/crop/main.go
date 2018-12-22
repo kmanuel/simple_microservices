@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/service/crop/update_status"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 	log "github.com/sirupsen/logrus"
@@ -64,10 +65,13 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	if !ok {
 		log.Error("couldnt convert args[0]")
 	} else {
-		log.Error("url: ", strings["url"])
+		update_status.NotifyAboutProcessingStart(strings["id"].(string))
+
 		width, _ := strconv.Atoi(strings["width"].(string))
 		height, _ := strconv.Atoi(strings["height"].(string))
 		handle(strings["in"].(string), width, height)
+
+		update_status.NotifyAboutCompletion(strings["id"].(string))
 	}
 
 	return nil

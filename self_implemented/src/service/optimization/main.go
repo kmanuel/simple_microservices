@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/service/optimization/update_status"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 	log "github.com/sirupsen/logrus"
@@ -48,8 +49,8 @@ func startFaktory() {
 			return err
 		}
 	})
-	mgr.Register("most_significant_image", convertTask)
-	mgr.Queues = []string{"most_significant_image"}
+	mgr.Register("optimization", convertTask)
+	mgr.Queues = []string{"optimization"}
 	var quit bool
 	mgr.On(worker.Shutdown, func() {
 		quit = true
@@ -64,6 +65,8 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	if !ok {
 		log.Error("couldnt convert args[0]")
 	} else {
+		update_status.NotifyAboutProcessingStart(strings["id"].(string))
+
 		downloadedFilePath := minioconnector.DownloadFile(strings["in"].(string))
 
 		width, _ := strconv.Atoi(strings["width"].(string))
@@ -71,6 +74,8 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 		outputFilePath := optimizeImage(downloadedFilePath, width, height)
 
 		minioconnector.UploadFile(outputFilePath)
+
+		update_status.NotifyAboutCompletion(strings["id"].(string))
 	}
 
 	return nil

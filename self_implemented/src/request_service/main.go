@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/database"
@@ -14,6 +13,16 @@ import (
 	"os"
 	"strconv"
 )
+
+type NewTask struct {
+	Id	string	`json:"id"`
+}
+
+
+type TaskStatus struct {
+	Id 		string	`json:"id"`
+	Status 	string 	`json:"status"`
+}
 
 type TaskStatusUpdate struct {
 	Status	string	`json:"status"`
@@ -35,60 +44,66 @@ func main() {
 		os.Getenv("POSTGRES_DB"),
 	)
 
-	status := database.FetchStatus("otherqwer")
-
-	log.Error("status of otherqwer task is" + status)
-
-
 	port := 8080
 	api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: port})
 
 	handler := api.Handler().(*httprouter.Router)
-	handler.POST("/tasks/{taskId}/status", UpdateStatus)
+	handler.POST("/tasks/", CreateNew)
+	handler.GET("/tasks", GetTasks)
+	handler.POST("/tasks/:taskId/status", UpdateStatus)
+	handler.GET("/tasks/:taskId/status", GetStatus)
+
+	handler.GET("/health", GetHealth)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 
-	//tasks := database.FetchTasks()
-	//
-	//for _, task := range *tasks {
-	//	log.Error("taskId=" + task.ID)
-	//}
-
 }
 
-func UpdateStatus(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	log.Info("received request for new task")
+func CreateNew(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log.Info("creating new TaskStatus")
 
-	params := mux.Vars(r)
+	var newTask NewTask
+	_ = json.NewDecoder(r.Body).Decode(&newTask)
+
+	database.Persist(newTask.Id)
+}
+
+func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log.Info("getting all tasks")
+
+	all := database.FetchAll()
+
+	json.NewEncoder(w).Encode(all)
+}
+
+func UpdateStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	log.Info("received update request")
 
 	var statusUpdate TaskStatusUpdate
 	_ = json.NewDecoder(r.Body).Decode(&statusUpdate)
 
-	taskId := params["taskId"]
+	taskId := ps.ByName("taskId")
+
+	database.UpdateStatus(taskId, statusUpdate.Status)
 
 
 	log.Error("task with id="+taskId+" gets updated status=" + statusUpdate.Status)
-
-
-
-	//
-	//body, err := ioutil.ReadAll(r.Body)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//var t model.Task
-	//_ = t.UnmarshalJSON(body)
-	//
-	//t.ID = uuid.New().String()
-	//
-	//log.WithFields(log.Fields{
-	//	"taskID": t.ID,
-	//}).Info("finished task handling")
-	//publishToFactory(&t)
-	//
-	//w.Header().Set("Content-Type", "application/json")
-	//w.WriteHeader(201)
-	//json.NewEncoder(w).Encode(t)
 }
 
+func GetStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	log.Info("received GET status request")
+
+	taskId := ps.ByName("taskId")
+
+	status := database.FetchStatus(taskId)
+
+	var t TaskStatus
+	t.Id = taskId
+	t.Status = status
+
+	json.NewEncoder(w).Encode(t)
+}
+
+func GetHealth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.WriteHeader(200)
+}

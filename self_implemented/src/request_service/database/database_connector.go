@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/model"
 	_ "github.com/lib/pq"
 )
 
@@ -41,10 +40,18 @@ func Init(
 	`)
 }
 
-func Persist(t *model.Task) {
+func Persist(taskId string) {
 	exec(`
 		INSERT INTO Tasks (id, status)
-		VALUES ('` + t.ID + `', 'new')
+		VALUES ('` + taskId + `', 'new')
+	`)
+}
+
+func UpdateStatus(taskId string, newStatus string) {
+	exec(` 
+		UPDATE Tasks
+			SET status = '` + newStatus + `'
+			WHERE id = '` + taskId + `'
 	`)
 }
 
@@ -69,7 +76,7 @@ func FetchStatus(taskId string) string {
 	return status
 }
 
-func FetchTasks() *[]model.Task {
+func FetchAll() *[]TaskStatus {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbName)
 
@@ -85,11 +92,11 @@ func FetchTasks() *[]model.Task {
 	}
 	defer rows.Close()
 
-	tasks := make([]model.Task, 0)
+	tasks := make([]TaskStatus, 0)
 
 	for rows.Next() {
-		var t model.Task
-		err := rows.Scan(&t.ID, &t.Type)
+		var t TaskStatus
+		err := rows.Scan(&t.ID, &t.Status)
 		if err != nil {
 			panic(err)
 		}
@@ -99,6 +106,8 @@ func FetchTasks() *[]model.Task {
 
 	return &tasks
 }
+
+
 
 func exec(query string) {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
