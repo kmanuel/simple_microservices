@@ -37,8 +37,6 @@ services:
   request_service:
     build:
       context: src/request_service
-    ports:
-    - "9191:8080"
     depends_on:
     - "postgres"
 

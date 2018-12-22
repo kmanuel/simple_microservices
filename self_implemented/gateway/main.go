@@ -16,6 +16,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 )
 
@@ -81,6 +83,13 @@ func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log.Info("received request for all tasks")
+
+	requestServiceUrl, e := url.Parse("http://request_service:8080")
+	if e != nil {
+		panic(e)
+	}
+	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
 	json.NewEncoder(w).Encode(tasks)
 }
 
