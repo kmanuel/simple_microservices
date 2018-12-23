@@ -52,34 +52,39 @@ func main() {
 	handler.GET("/tasks", GetTasks)
 	handler.POST("/tasks", NewTask)
 	handler.POST("/upload", UploadFile)
+	handler.GET("/tasks/:taskId/download", DownloadFile)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 }
 
 func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Info("incoming file upload request")
-	r.ParseMultipartForm(32 << 20)
-	file, handler, err := r.FormFile("uploadfile")
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		panic(err)
+	}
+
+	file, _, err := r.FormFile("uploadfile")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	defer file.Close()
-	f, err := os.OpenFile("/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer f.Close()
-	io.Copy(f, file)
 
-	uploadedFileName := minioconnector.UploadFile("/tmp/" + handler.Filename)
+	uploadedFileName := uuid.New().String()
+	minioconnector.UploadFileStream(file, uploadedFileName)
 
 	var uploadResponse UploadResponse
 	uploadResponse.FileId = uploadedFileName
 
 	json.NewEncoder(w).Encode(uploadResponse)
+}
 
+func DownloadFile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	taskId := ps.ByName("taskId")
+	log.Info("download request for taskId=", taskId)
+	object := minioconnector.GetObject(taskId)
+	io.Copy(w, object)
 }
 
 func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

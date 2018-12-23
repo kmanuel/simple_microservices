@@ -73,6 +73,7 @@ func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	all := database.FetchAll()
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(all)
 }
 
@@ -101,6 +102,7 @@ func GetStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	t.Id = taskId
 	t.Status = status
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(t)
 }
 
