@@ -16,14 +16,6 @@ type Request struct {
 	Url string `json:"url"`
 }
 
-type TaskParamsType map[string]interface{}
-
-type Task struct {
-	ID         string         `json:"id"`
-	Type       string         `json:"tasktype"`
-	TaskParams TaskParamsType `json:"taskParams"`
-}
-
 func main() {
 	godotenv.Load()
 	minioconnector.Init(
