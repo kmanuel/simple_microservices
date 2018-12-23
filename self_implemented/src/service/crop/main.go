@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/google/uuid"
@@ -13,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"image"
 	"image/jpeg"
-	"net/http"
 	"os"
 	"strconv"
 )
@@ -65,7 +63,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		width, _ := strconv.Atoi(strings["width"].(string))
 		height, _ := strconv.Atoi(strings["height"].(string))
-		handle(strings["in"].(string), width, height)
+		handle(strings["id"].(string), strings["in"].(string), width, height)
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
 	}
@@ -73,18 +71,12 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	return nil
 }
 
-func handle(inputFileId string, width int, height int) {
+func handle(taskId string, inputFileId string, width int, height int) {
 	downloadedFilePath := DownloadFile(inputFileId)
 	croppedFilePath := CropImage(downloadedFilePath, width, height)
-	minioconnector.UploadFile(croppedFilePath)
+	minioconnector.UploadFileWithName(croppedFilePath, taskId)
 }
 
-func parseRequest(w http.ResponseWriter, r *http.Request) Request {
-	json.NewEncoder(w).Encode("received request")
-	var task Request
-	_ = json.NewDecoder(r.Body).Decode(&task)
-	return task
-}
 func DownloadFile(objectName string) string {
 	return minioconnector.DownloadFile(objectName)
 }

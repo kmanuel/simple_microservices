@@ -63,7 +63,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		ExtractMostSignificantImage(strings["url"].(string), outputFile)
 
-		minioconnector.UploadFile(outputFile)
+		minioconnector.UploadFileWithName(outputFile, strings["id"].(string))
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
 	}

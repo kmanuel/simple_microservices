@@ -58,7 +58,8 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	if !ok {
 		log.Error("couldnt convert args[0]")
 	} else {
-		update_status.NotifyAboutProcessingStart(strings["id"].(string))
+		taskId := strings["id"].(string)
+		update_status.NotifyAboutProcessingStart(taskId)
 
 		inputLocation := strings["in"].(string)
 
@@ -69,9 +70,9 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		outputFilePath := ExtractPortrait(downloadedFilePath, width, height)
 
-		minioconnector.UploadFile(outputFilePath)
+		minioconnector.UploadFileWithName(outputFilePath, taskId)
 
-		update_status.NotifyAboutCompletion(strings["id"].(string))
+		update_status.NotifyAboutCompletion(taskId)
 	}
 
 	return nil
