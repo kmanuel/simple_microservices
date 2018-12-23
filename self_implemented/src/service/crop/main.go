@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/google/uuid"
@@ -9,9 +11,12 @@ import (
 	"github.com/kmanuel/simple_microservices/self_implemented/src/service/crop/update_status"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"image"
 	"image/jpeg"
+	"net/http"
 	"os"
 	"strconv"
 )
@@ -23,17 +28,50 @@ type Request struct {
 }
 
 func main() {
+	initMinio()
+	go startPrometheus()
+	startFaktory()
+}
+
+func initMinio() {
 	godotenv.Load()
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
+}
 
-	startFaktory()
+var (
+	requests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "request_count",
+			Help: "Number of requests handled from faktory.",
+		},
+		[]string{"service", "status"},
+	)
+)
+
+//var opts = prometheus.CounterOpts{
+//Name:	"incoming_request_count",
+//Help:	"Number of incoming requests from faktory",
+//}
+//var faktoryRequestCounter = prometheus.NewCounter(opts)
+
+func startPrometheus() {
+	prometheus.MustRegister(requests)
+
+	var addr = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
+
+	flag.Parse()
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(*addr, nil))
+
+
 }
 
 func startFaktory() {
+	fmt.Println("starting faktory")
 	mgr := worker.NewManager()
 	mgr.Use(func(perform worker.Handler) worker.Handler {
 		return func(ctx worker.Context, job *faktory.Job) error {
@@ -51,9 +89,12 @@ func startFaktory() {
 	})
 	// Start processing jobs, this method does not return
 	mgr.Run()
+	fmt.Println("started faktory")
 }
 
 func convertTask(ctx worker.Context, args ...interface{}) error {
+	requests.With(prometheus.Labels{"service":"crop", "status": "fetched"}).Inc()
+
 	log.Info("Working on job %s\n", ctx.Jid())
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
@@ -66,6 +107,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 		handle(strings["id"].(string), strings["in"].(string), width, height)
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
+		requests.With(prometheus.Labels{"service":"crop", "status": "completed"}).Inc()
 	}
 
 	return nil
