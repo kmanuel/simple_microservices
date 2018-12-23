@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/advancedlogic/GoOse"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
@@ -28,11 +27,6 @@ func main() {
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
-
-
-	//router := mux.NewRouter()
-	//router.HandleFunc("/", handleRequest).Methods("POST")
-	//log.Info(http.ListenAndServe(":8080", router))
 
 	startFaktory()
 }
@@ -75,17 +69,6 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	}
 
 	return nil
-}
-
-func HandleRequest(w http.ResponseWriter, r *http.Request) {
-	var task Request
-	_ = json.NewDecoder(r.Body).Decode(&task)
-	inputUrl := task.In
-	outputFile := OutputImageLocation + uuid.New().String() + ".jpg"
-
-	ExtractMostSignificantImage(inputUrl, outputFile)
-
-	minioconnector.UploadFile(outputFile)
 }
 
 func ExtractMostSignificantImage(inputUrl string, outputFile string) {

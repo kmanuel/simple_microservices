@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/google/uuid"
@@ -13,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"image"
 	"image/jpeg"
-	"net/http"
 	"os"
 	"strconv"
 )
@@ -31,10 +29,6 @@ func main() {
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
-
-	//router := mux.NewRouter()
-	//router.HandleFunc("/", handleRequest).Methods("POST")
-	//log.Info(http.ListenAndServe(":8080", router))
 
 	startFaktory()
 }
@@ -79,21 +73,6 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	}
 
 	return nil
-}
-
-func HandleRequest(w http.ResponseWriter, r *http.Request) {
-	log.Info("received request")
-	json.NewEncoder(w).Encode("received request")
-	var task Request
-	_ = json.NewDecoder(r.Body).Decode(&task)
-
-	downloadedFilePath := minioconnector.DownloadFile(task.In)
-
-	outputFilePath := optimizeImage(downloadedFilePath, task.Width, task.Height)
-
-	minioconnector.UploadFile(outputFilePath)
-
-	log.Info("finished request")
 }
 
 func optimizeImage(inputFile string, width int, height int) string {

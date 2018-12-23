@@ -32,10 +32,6 @@ func main() {
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
 
-	//router := mux.NewRouter()
-	//router.HandleFunc("/", handleRequest).Methods("POST")
-	//log.Info(http.ListenAndServe(":8080", router))
-
 	startFaktory()
 }
 
@@ -75,18 +71,6 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	}
 
 	return nil
-}
-
-
-func handleRequest(w http.ResponseWriter, r *http.Request) {
-	log.Info("received new request")
-	request := parseRequest(w, r)
-	inputFileId := request.In
-	width := request.Width
-	height := request.Height
-	handle(inputFileId, width, height)
-
-	log.Info("finished request handling")
 }
 
 func handle(inputFileId string, width int, height int) {
