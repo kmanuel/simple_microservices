@@ -52,12 +52,6 @@ var (
 	)
 )
 
-//var opts = prometheus.CounterOpts{
-//Name:	"incoming_request_count",
-//Help:	"Number of incoming requests from faktory",
-//}
-//var faktoryRequestCounter = prometheus.NewCounter(opts)
-
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
@@ -66,8 +60,6 @@ func startPrometheus() {
 	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
-
-
 }
 
 func startFaktory() {

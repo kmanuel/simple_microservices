@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	faktory "github.com/contribsys/faktory/client"
 	"github.com/google/uuid"
@@ -12,6 +13,8 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/resolver"
 	"github.com/manyminds/api2go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -45,17 +48,42 @@ func main() {
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
 
+	go startPrometheus()
+
+	startRestApi()
+}
+
+func startRestApi() {
 	port := 8080
 	api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: port})
-
 	handler := api.Handler().(*httprouter.Router)
 	handler.GET("/tasks", GetTasks)
 	handler.POST("/tasks", NewTask)
 	handler.POST("/upload", UploadFile)
 	handler.GET("/tasks/:taskId/download", DownloadFile)
-
 	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 }
+
+var (
+	requests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "request_count",
+			Help: "Number of requests handled from faktory.",
+		},
+		[]string{"service", "status"},
+	)
+)
+
+func startPrometheus() {
+	prometheus.MustRegister(requests)
+
+	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
+
+	flag.Parse()
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
 
 func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Info("incoming file upload request")

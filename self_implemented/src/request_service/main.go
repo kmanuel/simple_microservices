@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/database"
 	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/resolver"
 	"github.com/manyminds/api2go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -44,19 +47,42 @@ func main() {
 		os.Getenv("POSTGRES_DB"),
 	)
 
+	go startPrometheus()
+
+	startRestApi()
+}
+
+var (
+	requests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "request_count",
+			Help: "Number of requests handled from faktory.",
+		},
+		[]string{"service", "status"},
+	)
+)
+
+func startPrometheus() {
+	prometheus.MustRegister(requests)
+
+	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
+
+	flag.Parse()
+	http.Handle("/metrics", promhttp.Handler())
+	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+
+func startRestApi() {
 	port := 8080
 	api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: port})
-
 	handler := api.Handler().(*httprouter.Router)
 	handler.POST("/tasks/", CreateNew)
 	handler.GET("/tasks", GetTasks)
 	handler.POST("/tasks/:taskId/status", UpdateStatus)
 	handler.GET("/tasks/:taskId/status", GetStatus)
-
 	handler.GET("/health", GetHealth)
-
 	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
-
 }
 
 func CreateNew(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
