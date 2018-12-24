@@ -22,7 +22,8 @@ services:
       - "9090:9090"
 
   grafana:
-    image: grafana/grafana
+    build:
+      context: grafana
     ports:
       - "3000:3000"
 
