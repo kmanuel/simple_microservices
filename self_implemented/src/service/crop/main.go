@@ -34,7 +34,10 @@ func main() {
 }
 
 func initMinio() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
@@ -74,12 +77,14 @@ func startFaktory() {
 		}
 	})
 	mgr.Register("crop", convertTask)
+	log.Println("did register")
 	mgr.Queues = []string{"crop"}
 	var quit bool
 	mgr.On(worker.Shutdown, func() {
 		quit = true
 	})
 	// Start processing jobs, this method does not return
+	fmt.Println("running mgr")
 	mgr.Run()
 	fmt.Println("started faktory")
 }
@@ -91,31 +96,40 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
 		log.Error("couldnt convert args[0]")
+		ctx.Err()
 	} else {
 		update_status.NotifyAboutProcessingStart(strings["id"].(string))
 
 		width, _ := strconv.Atoi(strings["width"].(string))
 		height, _ := strconv.Atoi(strings["height"].(string))
-		handle(strings["id"].(string), strings["in"].(string), width, height)
+		err := handle(strings["id"].(string), strings["in"].(string), width, height)
+		if err != nil {
+			ctx.Err()
+		}
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
+		ctx.Done()
 		requests.With(prometheus.Labels{"service":"crop", "status": "completed"}).Inc()
 	}
 
 	return nil
 }
 
-func handle(taskId string, inputFileId string, width int, height int) {
+func handle(taskId string, inputFileId string, width int, height int) error {
 	downloadedFilePath := DownloadFile(inputFileId)
-	croppedFilePath := CropImage(downloadedFilePath, width, height)
+	croppedFilePath, err := CropImage(downloadedFilePath, width, height)
+	if err != nil {
+		return err
+	}
 	minioconnector.UploadFileWithName(croppedFilePath, taskId)
+	return nil
 }
 
 func DownloadFile(objectName string) string {
 	return minioconnector.DownloadFile(objectName)
 }
 
-func CropImage(inputImg string, width int, height int) string {
+func CropImage(inputImg string, width int, height int) (string, error) {
 	log.Info("starting to crop image")
 
 	outputFilePath := "/tmp/downloaded" + uuid.New().String() + ".jpg"
@@ -130,11 +144,14 @@ func CropImage(inputImg string, width int, height int) string {
 	croppedImg := img.(SubImager).SubImage(topCrop)
 	f, err := os.Create(outputFilePath)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer f.Close()
-	jpeg.Encode(f, croppedImg, nil)
+	err = jpeg.Encode(f, croppedImg, nil)
+	if err != nil {
+		return "", err
+	}
 
 	log.Info("finished cropping image")
-	return outputFilePath
+	return outputFilePath, nil
 }
