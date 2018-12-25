@@ -27,7 +27,10 @@ type Request struct {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
@@ -85,7 +88,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
-		log.Error("couldnt convert args[0]")
+		ctx.Err()
 	} else {
 		taskId := strings["id"].(string)
 		update_status.NotifyAboutProcessingStart(taskId)
@@ -94,17 +97,23 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		width, _ := strconv.Atoi(strings["width"].(string))
 		height, _ := strconv.Atoi(strings["height"].(string))
-		outputFilePath := optimizeImage(downloadedFilePath, width, height)
+		outputFilePath, err := optimizeImage(downloadedFilePath, width, height)
+		if err != nil {
+			ctx.Err()
+			return nil
+		}
 
 		minioconnector.UploadFileWithName(outputFilePath, taskId)
 
 		update_status.NotifyAboutCompletion(taskId)
+
+		ctx.Done()
 	}
 
 	return nil
 }
 
-func optimizeImage(inputFile string, width int, height int) string {
+func optimizeImage(inputFile string, width int, height int) (string, error) {
 	log.Info("optimizing image")
 	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
 
@@ -118,11 +127,15 @@ func optimizeImage(inputFile string, width int, height int) string {
 	croppedImg := img.(SubImager).SubImage(topCrop)
 	f, err := os.Create(outputFilePath)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer f.Close()
-	jpeg.Encode(f, croppedImg, nil)
+	err = jpeg.Encode(f, croppedImg, nil)
+	if err != nil {
+		return "", err
+	}
+
 
 	log.Info("optimized image")
-	return outputFilePath
+	return outputFilePath, nil
 }
