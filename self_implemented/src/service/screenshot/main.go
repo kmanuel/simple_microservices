@@ -21,7 +21,10 @@ type Request struct {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
@@ -81,22 +84,28 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
+		ctx.Err()
 		log.Error("couldnt convert args[0]")
 	} else {
 		taskId := strings["id"].(string)
 		update_status.NotifyAboutProcessingStart(taskId)
 
-		outputFilePath := takeScreenShot(strings["url"].(string))
+		outputFilePath, err := takeScreenShot(strings["url"].(string))
+		if err != nil {
+			ctx.Err()
+			return nil
+		}
 
 		minioconnector.UploadFileWithName(outputFilePath, taskId)
 
 		update_status.NotifyAboutCompletion(taskId)
+		ctx.Done()
 	}
 
 	return nil
 }
 
-func takeScreenShot(url string) string {
+func takeScreenShot(url string) (string, error) {
 	log.WithField("url", url).Info("taking screenshot")
 
 	chromeUserAgent := "Mozilla/5.0 (Windows NT 6.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36"
@@ -109,10 +118,10 @@ func takeScreenShot(url string) string {
 	cmd := exec.Command(phantomJSBin, jsPath, url, outputFilePath, logFile, chromeUserAgent)
 
 	if err := cmd.Run(); nil != err {
-		log.Printf("process job err - %s\n", err.Error())
+		return "", err
 	}
 
 	log.WithField("url", url).Info("took screenshot")
 
-	return outputFilePath
+	return outputFilePath, nil
 }
