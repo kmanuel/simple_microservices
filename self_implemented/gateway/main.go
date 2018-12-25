@@ -41,7 +41,10 @@ type UploadResponse struct {
 var tasks []Task
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
@@ -70,7 +73,7 @@ var (
 			Name: "request_count",
 			Help: "Number of requests handled from faktory.",
 		},
-		[]string{"service", "status"},
+		[]string{"service", "type"},
 	)
 )
 
@@ -86,6 +89,7 @@ func startPrometheus() {
 
 
 func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	requests.With(prometheus.Labels{"service":"gateway", "type": "upload"}).Inc()
 	log.Info("incoming file upload request")
 	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
@@ -105,10 +109,14 @@ func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var uploadResponse UploadResponse
 	uploadResponse.FileId = uploadedFileName
 
-	json.NewEncoder(w).Encode(uploadResponse)
+	err = json.NewEncoder(w).Encode(uploadResponse)
+	if err != nil {
+		log.Error("error writing response")
+	}
 }
 
 func DownloadFile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	requests.With(prometheus.Labels{"service":"gateway", "type": "download"}).Inc()
 	taskId := ps.ByName("taskId")
 	log.Info("download request for taskId=", taskId)
 	object := minioconnector.GetObject(taskId)
@@ -116,6 +124,7 @@ func DownloadFile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 }
 
 func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	requests.With(prometheus.Labels{"service":"gateway", "type": "get_tasks"}).Inc()
 	log.Info("received request for all tasks")
 
 	requestServiceUrl, e := url.Parse("http://request_service:8080")
@@ -123,19 +132,30 @@ func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		panic(e)
 	}
 	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
-	json.NewEncoder(w).Encode(tasks)
+
+	err := json.NewEncoder(w).Encode(tasks)
+	if err != nil {
+		log.Error("error writing response")
+	}
+
 }
 
 func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	requests.With(prometheus.Labels{"service":"gateway", "type": "create_task"}).Inc()
 	log.Info("received request for new task")
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(500)
+		return
 	}
 	taskId := uuid.New().String()
 
-	sendToRequestService(taskId)
+	err = sendToRequestService(taskId)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 
 	var t Task
 	_ = t.UnmarshalJSON(body)
@@ -144,33 +164,44 @@ func NewTask(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	log.WithFields(log.Fields{
 	}).Info("finished task handling")
-	publishToFactory(&t)
+	err = publishToFactory(&t)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(201)
+		err := json.NewEncoder(w).Encode(t)
+		if err != nil {
+			log.Error("error writing response")
+		}
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	json.NewEncoder(w).Encode(t)
 }
 
-func sendToRequestService(taskId string) {
+func sendToRequestService(taskId string) error {
 	var nt NewTaskType
 	nt.Id = taskId
 	marshal, e := json.Marshal(nt)
 	if e != nil {
 		panic(e)
 	}
-	http.Post("http://request_service:8080/tasks", "application/json", bytes.NewBuffer([]byte(marshal)))
+	_, err := http.Post("http://request_service:8080/tasks", "application/json", bytes.NewBuffer([]byte(marshal)))
+	return err
 }
 
-func publishToFactory(t *Task) {
+func publishToFactory(t *Task) error {
+	log.Info("publish to faktory")
 	client, err := faktory.Open()
-	log.Println(err)
+	if err != nil {
+		return err
+	}
 	job := faktory.NewJob(t.Type, &t.TaskParams)
 	job.Queue = t.Type
 	t.TaskParams["id"] = t.ID
 	job.Custom = t.TaskParams
 	err = client.Push(job)
-	log.Println(err)
-	log.Println("published task to factory")
+	return err
 }
 
 func (t *Task) UnmarshalJSON(data []byte) error {
