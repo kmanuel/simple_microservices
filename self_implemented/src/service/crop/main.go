@@ -77,16 +77,12 @@ func startFaktory() {
 		}
 	})
 	mgr.Register("crop", convertTask)
-	log.Println("did register")
 	mgr.Queues = []string{"crop"}
 	var quit bool
 	mgr.On(worker.Shutdown, func() {
 		quit = true
 	})
-	// Start processing jobs, this method does not return
-	fmt.Println("running mgr")
 	mgr.Run()
-	fmt.Println("started faktory")
 }
 
 func convertTask(ctx worker.Context, args ...interface{}) error {

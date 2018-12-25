@@ -24,7 +24,10 @@ type Request struct {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
@@ -74,7 +77,6 @@ func startFaktory() {
 	mgr.On(worker.Shutdown, func() {
 		quit = true
 	})
-	// Start processing jobs, this method does not return
 	mgr.Run()
 }
 
@@ -82,27 +84,38 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
-		log.Error("couldnt convert args[0]")
+		ctx.Err()
+		return nil
 	} else {
 		update_status.NotifyAboutProcessingStart(strings["id"].(string))
 
 		outputFile := OutputImageLocation + uuid.New().String() + ".jpg"
 
-		ExtractMostSignificantImage(strings["url"].(string), outputFile)
+		err := ExtractMostSignificantImage(strings["url"].(string), outputFile)
+		if err != nil {
+			ctx.Err()
+			return nil
+		}
 
 		minioconnector.UploadFileWithName(outputFile, strings["id"].(string))
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
+
+		ctx.Done()
 	}
 
 	return nil
 }
 
-func ExtractMostSignificantImage(inputUrl string, outputFile string) {
+func ExtractMostSignificantImage(inputUrl string, outputFile string) error {
 	g := goose.New()
-	article, _ := g.ExtractFromURL(inputUrl)
+	article, err := g.ExtractFromURL(inputUrl)
+	if err != nil {
+		return err
+	}
 	topImageUrl := article.TopImage
-	DownloadImage(topImageUrl, outputFile)
+	err = DownloadImage(topImageUrl, outputFile)
+	return err
 }
 
 func DownloadImage(url string, outputFile string) error {
