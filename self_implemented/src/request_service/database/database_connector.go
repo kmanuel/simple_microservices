@@ -24,7 +24,7 @@ func Init(
 	portArg int,
 	userArg string,
 	passwordArg string,
-	dbNameArg string) {
+	dbNameArg string) error {
 
 	host = hostArg
 	port = portArg
@@ -32,7 +32,7 @@ func Init(
 	password = passwordArg
 	dbName = dbNameArg
 
-	exec(`
+	return exec(`
 		CREATE TABLE IF NOT EXISTS Tasks (
 			id VARCHAR(255) PRIMARY KEY,
 			status VARCHAR(255)
@@ -40,28 +40,28 @@ func Init(
 	`)
 }
 
-func Persist(taskId string) {
-	exec(`
+func Persist(taskId string) error {
+	return exec(`
 		INSERT INTO Tasks (id, status)
 		VALUES ('` + taskId + `', 'new')
 	`)
 }
 
-func UpdateStatus(taskId string, newStatus string) {
-	exec(` 
+func UpdateStatus(taskId string, newStatus string) error {
+	return exec(` 
 		UPDATE Tasks
 			SET status = '` + newStatus + `'
 			WHERE id = '` + taskId + `'
 	`)
 }
 
-func FetchStatus(taskId string) string {
+func FetchStatus(taskId string) (string, error) {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbName)
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	defer db.Close()
 
@@ -70,19 +70,19 @@ func FetchStatus(taskId string) string {
 	var status string
 	err = row.Scan(&status)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	return status
+	return status, nil
 }
 
-func FetchAll() *[]TaskStatus {
+func FetchAll() (*[]TaskStatus, error) {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbName)
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer db.Close()
 
@@ -104,12 +104,12 @@ func FetchAll() *[]TaskStatus {
 		tasks = append(tasks, t)
 	}
 
-	return &tasks
+	return &tasks, nil
 }
 
 
 
-func exec(query string) {
+func exec(query string) error {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbName)
 
@@ -119,7 +119,8 @@ func exec(query string) {
 	}
 	defer db.Close()
 
-	db.Exec(query)
+	_, err = db.Exec(query)
+	return err
 }
 
 

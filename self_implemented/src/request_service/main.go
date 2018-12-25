@@ -32,20 +32,26 @@ type TaskStatusUpdate struct {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	dbPortStr := os.Getenv("POSTGRES_PORT")
 	dbPort, err := strconv.Atoi(dbPortStr)
 	if err != nil {
 		panic(err)
 	}
 
-	database.Init(
+	err = database.Init(
 		os.Getenv("POSTGRES_HOST"),
 		dbPort,
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	go startPrometheus()
 
@@ -91,16 +97,28 @@ func CreateNew(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var newTask NewTask
 	_ = json.NewDecoder(r.Body).Decode(&newTask)
 
-	database.Persist(newTask.Id)
+	err := database.Persist(newTask.Id)
+	if err != nil {
+		w.WriteHeader(500)
+	} else {
+		w.WriteHeader(201)
+	}
 }
 
 func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Info("getting all tasks")
 
-	all := database.FetchAll()
+	all, err := database.FetchAll()
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(all)
+	err = json.NewEncoder(w).Encode(all)
+	if err != nil {
+		log.Error("failed to write response")
+	}
 }
 
 func UpdateStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -111,10 +129,12 @@ func UpdateStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	taskId := ps.ByName("taskId")
 
-	database.UpdateStatus(taskId, statusUpdate.Status)
-
-
-	log.Error("task with id="+taskId+" gets updated status=" + statusUpdate.Status)
+	err := database.UpdateStatus(taskId, statusUpdate.Status)
+	if err != nil {
+		w.WriteHeader(500)
+	} else {
+		w.WriteHeader(200)
+	}
 }
 
 func GetStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -122,14 +142,21 @@ func GetStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	taskId := ps.ByName("taskId")
 
-	status := database.FetchStatus(taskId)
+	status, err := database.FetchStatus(taskId)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 
 	var t TaskStatus
 	t.Id = taskId
 	t.Status = status
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(t)
+	err = json.NewEncoder(w).Encode(t)
+	if err != nil {
+		log.Error("failed to write response")
+	}
 }
 
 func GetHealth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
