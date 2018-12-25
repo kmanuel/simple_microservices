@@ -24,7 +24,10 @@ type Request struct {
 }
 
 func main() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
 	minioconnector.Init(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
@@ -84,6 +87,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
+		ctx.Err()
 		log.Error("couldnt convert args[0]")
 	} else {
 		taskId := strings["id"].(string)
@@ -96,11 +100,17 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 		width, _ := strconv.Atoi(strings["width"].(string))
 		height, _ := strconv.Atoi(strings["height"].(string))
 
-		outputFilePath := ExtractPortrait(downloadedFilePath, width, height)
+		outputFilePath, err := ExtractPortrait(downloadedFilePath, width, height)
+		if err != nil {
+			ctx.Err()
+			return nil
+		}
 
 		minioconnector.UploadFileWithName(outputFilePath, taskId)
 
 		update_status.NotifyAboutCompletion(taskId)
+
+		ctx.Done()
 	}
 
 	return nil
@@ -109,7 +119,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 func ExtractPortrait(
 	inputLocation string,
 	width int,
-	height int) string {
+	height int) (string, error) {
 
 	log.Info("extracting portrait")
 
@@ -130,8 +140,11 @@ func ExtractPortrait(
 		"-face=1",
 		"-cc=./data/facefinder",
 	)
-	cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
 
 	log.Info("extracted portrait")
-	return outputFilePath
+	return outputFilePath, nil
 }
