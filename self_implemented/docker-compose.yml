@@ -22,8 +22,11 @@ services:
       - "9090:9090"
 
   grafana:
-    build:
-      context: grafana
+    image: grafana/grafana
+    volumes:
+      - ${PWD}/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ${PWD}/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards/
     ports:
       - "3000:3000"
 
