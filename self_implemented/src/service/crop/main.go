@@ -129,7 +129,7 @@ func DownloadFile(objectName string) (string, error) {
 }
 
 func CropImage(inputImg string, width int, height int) (string, error) {
-	log.Info("starting to crop image")
+	log.Info("starting to crop api_image")
 
 	outputFilePath := "/tmp/downloaded" + uuid.New().String() + ".jpg"
 
@@ -151,6 +151,6 @@ func CropImage(inputImg string, width int, height int) (string, error) {
 		return "", err
 	}
 
-	log.Info("finished cropping image")
+	log.Info("finished cropping api_image")
 	return outputFilePath, nil
 }

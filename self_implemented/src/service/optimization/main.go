@@ -132,7 +132,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 }
 
 func optimizeImage(inputFile string, width int, height int) (string, error) {
-	log.Info("optimizing image")
+	log.Info("optimizing api_image")
 	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
 
 	f, _ := os.Open(inputFile)
@@ -154,6 +154,6 @@ func optimizeImage(inputFile string, width int, height int) (string, error) {
 	}
 
 
-	log.Info("optimized image")
+	log.Info("optimized api_image")
 	return outputFilePath, nil
 }

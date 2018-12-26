@@ -1,20 +1,24 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"github.com/google/jsonapi"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
-	"github.com/julienschmidt/httprouter"
 	"github.com/kmanuel/minioconnector"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/controller/image"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/controller/task"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/resolver"
-	"github.com/manyminds/api2go"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_faktory"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_root"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_image"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_task"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	//"github.com/prometheus/client_golang/prometheus"
+	//"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
@@ -35,7 +39,7 @@ func main() {
 
 	initMinio()
 	go startPrometheus()
-	startRestApi()
+	startJsonRestApi()
 }
 
 func initMinio() {
@@ -49,27 +53,43 @@ func initMinio() {
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
-	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
-
-	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(*addr, nil))
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }
 
-func startRestApi() {
-	imageController := image.NewImageController(requests)
-	taskController := task.NewTaskController(requests)
+func startJsonRestApi() {
+	jsonapi.Instrumentation = func(r *jsonapi.Runtime, eventType jsonapi.Event, callGUID string, dur time.Duration) {
+		metricPrefix := r.Value("instrument").(string)
 
-	port := 8080
-	api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: port})
-	handler := api.Handler().(*httprouter.Router)
+		if eventType == jsonapi.UnmarshalStart {
+			fmt.Printf("%s: id, %s, started at %v\n", metricPrefix+".jsonapi_unmarshal_time", callGUID, time.Now())
+		}
 
-	handler.GET("/tasks", taskController.HandleGetTasks)
-	handler.POST("/tasks", taskController.HandleTaskCreation)
-	handler.GET("/faktory/info", taskController.HandleGetTasksInfo)
+		if eventType == jsonapi.UnmarshalStop {
+			fmt.Printf("%s: id, %s, stopped at, %v , and took %v to unmarshal payload\n", metricPrefix+".jsonapi_unmarshal_time", callGUID, time.Now(), dur)
+		}
 
-	handler.POST("/upload", imageController.HandleUpload)
-	handler.GET("/tasks/:taskId/download", imageController.HandleDownload)
+		if eventType == jsonapi.MarshalStart {
+			fmt.Printf("%s: id, %s, started at %v\n", metricPrefix+".jsonapi_marshal_time", callGUID, time.Now())
+		}
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handler))
+		if eventType == jsonapi.MarshalStop {
+			fmt.Printf("%s: id, %s, stopped at, %v , and took %v to marshal payload\n", metricPrefix+".jsonapi_marshal_time", callGUID, time.Now(), dur)
+		}
+	}
+
+	myRouter := mux.NewRouter().StrictSlash(false)
+
+	rootHandler := &api_root.RootHandler{}
+	imageHandler := &api_image.ImageHandler{ RequestCounter: requests }
+	taskHandler := &api_task.TaskHandler{ RequestCounter: requests }
+	faktoryHandler := &api_faktory.FaktoryHandler{RequestCounter: requests}
+
+	myRouter.HandleFunc("/resources", rootHandler.ServeHTTP)
+	myRouter.HandleFunc("/upload", imageHandler.ServeUploadHTTP)
+	myRouter.HandleFunc("/image/{id}", imageHandler.ServeHTTP)
+	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
+	myRouter.HandleFunc("/faktory/info", faktoryHandler.ServeHTTP)
+
+	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
