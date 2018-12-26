@@ -64,6 +64,7 @@ func startRestApi() {
 	handler.POST("/tasks", NewTask)
 	handler.POST("/upload", UploadFile)
 	handler.GET("/tasks/:taskId/download", DownloadFile)
+	handler.GET("/faktory/info", TasksInfo)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
 }
 
@@ -201,7 +202,27 @@ func publishToFactory(t *Task) error {
 	t.TaskParams["id"] = t.ID
 	job.Custom = t.TaskParams
 	err = client.Push(job)
+
 	return err
+}
+
+func TasksInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params)  {
+	client, err := faktory.Open()
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	info, err := client.Info()
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(info)
+	if err != nil {
+		log.Error("error writing response")
+	}
 }
 
 func (t *Task) UnmarshalJSON(data []byte) error {
