@@ -51,7 +51,7 @@ var (
 			Name: "request_count",
 			Help: "Number of requests handled from faktory.",
 		},
-		[]string{"service", "status"},
+		[]string{"controller", "status"},
 	)
 )
 
@@ -86,7 +86,7 @@ func startFaktory() {
 }
 
 func convertTask(ctx worker.Context, args ...interface{}) error {
-	requests.With(prometheus.Labels{"service":"crop", "status": "fetched"}).Inc()
+	requests.With(prometheus.Labels{"controller":"crop", "status": "fetched"}).Inc()
 
 	log.Info("Working on job %s\n", ctx.Jid())
 	strings, ok := args[0].(map[string]interface{})
@@ -105,7 +105,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
 		ctx.Done()
-		requests.With(prometheus.Labels{"service":"crop", "status": "completed"}).Inc()
+		requests.With(prometheus.Labels{"controller":"crop", "status": "completed"}).Inc()
 	}
 
 	return nil

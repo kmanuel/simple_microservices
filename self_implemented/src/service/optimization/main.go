@@ -48,7 +48,7 @@ var (
 			Name: "request_count",
 			Help: "Number of requests handled from faktory.",
 		},
-		[]string{"service", "status"},
+		[]string{"controller", "status"},
 	)
 )
 

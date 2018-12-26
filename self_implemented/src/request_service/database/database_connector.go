@@ -60,10 +60,10 @@ func FetchStatus(taskId string) (string, error) {
 		host, port, user, password, dbName)
 
 	db, err := sql.Open("postgres", psqlInfo)
+	defer db.Close()
 	if err != nil {
 		return "", err
 	}
-	defer db.Close()
 
 	row := db.QueryRow(`SELECT status FROM Tasks where id='` + taskId + `'`)
 
@@ -81,16 +81,16 @@ func FetchAll() (*[]TaskStatus, error) {
 		host, port, user, password, dbName)
 
 	db, err := sql.Open("postgres", psqlInfo)
+	defer db.Close()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
 	rows, e := db.Query("SELECT id, status FROM Tasks")
+	defer rows.Close()
 	if e != nil {
 		panic(e)
 	}
-	defer rows.Close()
 
 	tasks := make([]TaskStatus, 0)
 
@@ -114,10 +114,10 @@ func exec(query string) error {
 		host, port, user, password, dbName)
 
 	db, err := sql.Open("postgres", psqlInfo)
+	defer db.Close()
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
 
 	_, err = db.Exec(query)
 	return err
