@@ -87,7 +87,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
-		ctx.Err()
+		_ = ctx.Err()
 		log.Error("couldnt convert args[0]")
 	} else {
 		taskId := strings["id"].(string)
@@ -95,18 +95,35 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		inputLocation := strings["in"].(string)
 
-		downloadedFilePath := minioconnector.DownloadFile(inputLocation)
+		downloadedFilePath, err := minioconnector.DownloadFile(inputLocation)
+		if err != nil {
+			_ = ctx.Err()
+			return err
+		}
 
-		width, _ := strconv.Atoi(strings["width"].(string))
-		height, _ := strconv.Atoi(strings["height"].(string))
+		width, err := strconv.Atoi(strings["width"].(string))
+		if err != nil {
+			_ = ctx.Err()
+			return err
+		}
+
+		height, err := strconv.Atoi(strings["height"].(string))
+		if err != nil {
+			_ = ctx.Err()
+			return err
+		}
 
 		outputFilePath, err := ExtractPortrait(downloadedFilePath, width, height)
 		if err != nil {
-			ctx.Err()
-			return nil
+			_ = ctx.Err()
+			return err
 		}
 
-		minioconnector.UploadFileWithName(outputFilePath, taskId)
+		_, err = minioconnector.UploadFileWithName(outputFilePath, taskId)
+		if err != nil {
+			_ = ctx.Err()
+			return err
+		}
 
 		update_status.NotifyAboutCompletion(taskId)
 

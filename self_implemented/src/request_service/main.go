@@ -88,7 +88,7 @@ func startRestApi() {
 	handler.POST("/tasks/:taskId/status", UpdateStatus)
 	handler.GET("/tasks/:taskId/status", GetStatus)
 	handler.GET("/health", GetHealth)
-	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handler))
 }
 
 func CreateNew(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

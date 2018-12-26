@@ -88,22 +88,40 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
-		ctx.Err()
+		_ = ctx.Err()
 	} else {
 		taskId := strings["id"].(string)
 		update_status.NotifyAboutProcessingStart(taskId)
 
-		downloadedFilePath := minioconnector.DownloadFile(strings["in"].(string))
-
-		width, _ := strconv.Atoi(strings["width"].(string))
-		height, _ := strconv.Atoi(strings["height"].(string))
-		outputFilePath, err := optimizeImage(downloadedFilePath, width, height)
+		downloadedFilePath, err := minioconnector.DownloadFile(strings["in"].(string))
 		if err != nil {
-			ctx.Err()
+			_ = ctx.Err()
 			return nil
 		}
 
-		minioconnector.UploadFileWithName(outputFilePath, taskId)
+		width, err := strconv.Atoi(strings["width"].(string))
+		if err != nil {
+			_ = ctx.Err()
+			return nil
+		}
+
+		height, err := strconv.Atoi(strings["height"].(string))
+		if err != nil {
+			_ = ctx.Err()
+			return nil
+		}
+
+		outputFilePath, err := optimizeImage(downloadedFilePath, width, height)
+		if err != nil {
+			_ = ctx.Err()
+			return nil
+		}
+
+		_, err = minioconnector.UploadFileWithName(outputFilePath, taskId)
+		if err != nil {
+			_ = ctx.Err()
+			return nil
+		}
 
 		update_status.NotifyAboutCompletion(taskId)
 
@@ -126,10 +144,10 @@ func optimizeImage(inputFile string, width int, height int) (string, error) {
 	}
 	croppedImg := img.(SubImager).SubImage(topCrop)
 	f, err := os.Create(outputFilePath)
+	defer f.Close()
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
 	err = jpeg.Encode(f, croppedImg, nil)
 	if err != nil {
 		return "", err

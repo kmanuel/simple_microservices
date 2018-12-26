@@ -84,7 +84,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
-		ctx.Err()
+		_ = ctx.Err()
 		log.Error("couldnt convert args[0]")
 	} else {
 		taskId := strings["id"].(string)
@@ -92,11 +92,15 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		outputFilePath, err := takeScreenShot(strings["url"].(string))
 		if err != nil {
-			ctx.Err()
+			_ = ctx.Err()
 			return nil
 		}
 
-		minioconnector.UploadFileWithName(outputFilePath, taskId)
+		_, err = minioconnector.UploadFileWithName(outputFilePath, taskId)
+		if err != nil {
+			_ = ctx.Err()
+			return nil
+		}
 
 		update_status.NotifyAboutCompletion(taskId)
 		ctx.Done()

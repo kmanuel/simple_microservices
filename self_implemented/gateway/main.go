@@ -65,7 +65,7 @@ func startRestApi() {
 	handler.POST("/upload", UploadFile)
 	handler.GET("/tasks/:taskId/download", DownloadFile)
 	handler.GET("/faktory/info", TasksInfo)
-	http.ListenAndServe(fmt.Sprintf(":%d", port), handler)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handler))
 }
 
 var (
@@ -94,18 +94,24 @@ func UploadFile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Info("incoming file upload request")
 	err := r.ParseMultipartForm(32 << 20)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(500)
+		return
 	}
 
 	file, _, err := r.FormFile("uploadfile")
+	defer file.Close()
 	if err != nil {
-		fmt.Println(err)
+		w.WriteHeader(500)
 		return
 	}
-	defer file.Close()
+
 
 	uploadedFileName := uuid.New().String()
-	minioconnector.UploadFileStream(file, uploadedFileName)
+	err = minioconnector.UploadFileStream(file, uploadedFileName)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 
 	var uploadResponse UploadResponse
 	uploadResponse.FileId = uploadedFileName
@@ -120,8 +126,16 @@ func DownloadFile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	requests.With(prometheus.Labels{"service":"gateway", "type": "download"}).Inc()
 	taskId := ps.ByName("taskId")
 	log.Info("download request for taskId=", taskId)
-	object := minioconnector.GetObject(taskId)
-	io.Copy(w, object)
+	object, err := minioconnector.GetObject(taskId)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+	_, err = io.Copy(w, object)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
 }
 
 func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

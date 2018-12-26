@@ -92,7 +92,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
 		log.Error("couldnt convert args[0]")
-		ctx.Err()
+		_ = ctx.Err()
 	} else {
 		update_status.NotifyAboutProcessingStart(strings["id"].(string))
 
@@ -100,7 +100,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 		height, _ := strconv.Atoi(strings["height"].(string))
 		err := handle(strings["id"].(string), strings["in"].(string), width, height)
 		if err != nil {
-			ctx.Err()
+			_ = ctx.Err()
 		}
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
@@ -112,16 +112,19 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 }
 
 func handle(taskId string, inputFileId string, width int, height int) error {
-	downloadedFilePath := DownloadFile(inputFileId)
+	downloadedFilePath, err := DownloadFile(inputFileId)
+	if err != nil {
+		return err
+	}
 	croppedFilePath, err := CropImage(downloadedFilePath, width, height)
 	if err != nil {
 		return err
 	}
-	minioconnector.UploadFileWithName(croppedFilePath, taskId)
-	return nil
+	_, err = minioconnector.UploadFileWithName(croppedFilePath, taskId)
+	return err
 }
 
-func DownloadFile(objectName string) string {
+func DownloadFile(objectName string) (string, error) {
 	return minioconnector.DownloadFile(objectName)
 }
 
@@ -139,10 +142,10 @@ func CropImage(inputImg string, width int, height int) (string, error) {
 	}
 	croppedImg := img.(SubImager).SubImage(topCrop)
 	f, err := os.Create(outputFilePath)
+	defer f.Close()
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
 	err = jpeg.Encode(f, croppedImg, nil)
 	if err != nil {
 		return "", err

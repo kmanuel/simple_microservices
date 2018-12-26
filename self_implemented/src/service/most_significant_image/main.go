@@ -84,7 +84,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 	strings, ok := args[0].(map[string]interface{})
 	if !ok {
-		ctx.Err()
+		_ = ctx.Err()
 		return nil
 	} else {
 		update_status.NotifyAboutProcessingStart(strings["id"].(string))
@@ -93,11 +93,15 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		err := ExtractMostSignificantImage(strings["url"].(string), outputFile)
 		if err != nil {
-			ctx.Err()
+			_ = ctx.Err()
 			return nil
 		}
 
-		minioconnector.UploadFileWithName(outputFile, strings["id"].(string))
+		_, err = minioconnector.UploadFileWithName(outputFile, strings["id"].(string))
+		if err != nil {
+			_ = ctx.Err()
+			return nil
+		}
 
 		update_status.NotifyAboutCompletion(strings["id"].(string))
 
@@ -122,16 +126,16 @@ func DownloadImage(url string, outputFile string) error {
 	filepath := outputFile
 
 	out, err := os.Create(filepath)
+	defer out.Close()
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
 	resp, err := http.Get(url)
+	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
