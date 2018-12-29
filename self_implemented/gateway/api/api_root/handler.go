@@ -14,10 +14,6 @@ const (
 type RootHandler struct{}
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//if r.Header.Get(headerAccept) != api.MediaType {
-	//	http.Error(w, "Unsupported Media Type", http.StatusUnsupportedMediaType)
-	//}
-
 	var methodHandler http.HandlerFunc
 	switch r.Method {
 	case http.MethodGet:
@@ -33,7 +29,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *RootHandler) getRootResource(w http.ResponseWriter, r *http.Request) {
 	jsonapiRuntime := jsonapi.NewRuntime().Instrument("resources.list")
 
-	resources := fixtureRootResource()
+	resources := fixtureRootResource(r.Host)
 	fmt.Println("loaded resources", resources)
 
 
@@ -45,27 +41,3 @@ func (h *RootHandler) getRootResource(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func fixtureRootResource() interface{} {
-	return &Resource{
-		ID:		1,
-		Title: "RootResource",
-		Endpoints: []*Endpoint{
-			{
-				ID:	1,
-				Path: "/tasks",
-			},
-			{
-				ID: 2,
-				Path: "/faktory/info",
-			},
-			{
-				ID: 3,
-				Path: "/upload",
-			},
-			{
-				ID: 4,
-				Path: "/tasks/:taskId/download",
-			},
-		},
-	}
-}

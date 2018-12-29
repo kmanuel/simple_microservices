@@ -5,40 +5,40 @@ import (
 	"github.com/google/jsonapi"
 )
 
-type Resource struct {
-	ID			int				`api:"primary,resources"`
-	Title		string			`api:"attr,title"`
-	Endpoints	[]*Endpoint		`api:"relation,endpoints"`
+type RootResource struct {
+	ID			int				`jsonapi:"primary,resources"`
+	Title		string			`jsonapi:"attr,title"`
+	Endpoints	[]*Endpoint		`jsonapi:"relation,endpoints"`
 }
 
 type Endpoint struct {
-	ID			int				`api:"primary,endpoints"`
-	Path 		string			`api:"attr,path"`
+	ID			int				`jsonapi:"primary,endpoints"`
+	Path 		string			`jsonapi:"attr,path"`
 }
 
 // JSONAPILinks implements the Linkable interface for a blog
-func (r Resource) JSONAPILinks() *jsonapi.Links {
+func (r RootResource) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
-		"self": fmt.Sprintf("https://example.com/"),
+		"self": fmt.Sprintf("localhost:8080/"),
 	}
 }
-
-// JSONAPIRelationshipLinks implements the RelationshipLinkable interface for a blog
-func (r Resource) JSONAPIRelationshipLinks(relation string) *jsonapi.Links {
-	//if relation == "endpoints" {
-	//	return &api.Links{
-	//		"related": fmt.Sprintf("https://example.com/blogs/%d/posts", 123),
-	//	}
-	//}
-	return nil
-}
-
-// JSONAPIRelationshipMeta implements the RelationshipMetable interface for a blog
-func (r Resource) JSONAPIRelationshipMeta(relation string) *jsonapi.Meta {
-	if relation == "endpoints" {
-		return &jsonapi.Meta{
-			"detail": "endpoints offered by the gateway application",
-		}
-	}
-	return nil
-}
+//
+//// JSONAPIRelationshipLinks implements the RelationshipLinkable interface for a blog
+//func (r RootResource) JSONAPIRelationshipLinks(relation string) *jsonapi.Links {
+//	if relation == "endpoints" {
+//		return &jsonapi.Links{
+//			"related": fmt.Sprintf("https://example.com/blogs/%d/posts", 123),
+//		}
+//	}
+//	return nil
+//}
+//
+//// JSONAPIRelationshipMeta implements the RelationshipMetable interface for a blog
+//func (r RootResource) JSONAPIRelationshipMeta(relation string) *jsonapi.Meta {
+//	if relation == "endpoints" {
+//		return &jsonapi.Meta{
+//			"detail": "endpoints offered by the gateway application",
+//		}
+//	}
+//	return nil
+//}

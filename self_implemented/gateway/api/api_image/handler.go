@@ -1,7 +1,7 @@
 package api_image
 
 import (
-	"encoding/json"
+	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/kmanuel/minioconnector"
@@ -11,15 +11,24 @@ import (
 	"net/http"
 )
 
-type UploadResponse struct {
-	FileId string `json:"fileId"`
-}
-
 type ImageHandler struct{
 	RequestCounter *prometheus.CounterVec
 }
 
-func (h *ImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
+	var methodHandler http.HandlerFunc
+	switch r.Method {
+	case http.MethodGet:
+		methodHandler = h.GetImage
+	default:
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	methodHandler(w, r)
+}
+
+func (h *ImageHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
 	var methodHandler http.HandlerFunc
 	switch r.Method {
 	case http.MethodGet:
@@ -32,12 +41,24 @@ func (h *ImageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	methodHandler(w, r)
 }
 
+func (h *ImageHandler) GetImage(w http.ResponseWriter, r *http.Request) {
+	jsonapiRuntime := jsonapi.NewRuntime().Instrument("images")
+	imageId := mux.Vars(r)["id"]
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	newImage := &Image{ID: imageId}
+	if err := jsonapiRuntime.MarshalPayload(w, newImage); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func (h *ImageHandler) downloadImage(w http.ResponseWriter, r *http.Request) {
 	log.Info("download api_image request")
-	taskId := mux.Vars(r)["id"]
+	imageId := mux.Vars(r)["id"]
 
-	log.Info("download request for taskId=", taskId)
-	object, err := minioconnector.GetObject(taskId)
+	log.Info("download request for imageId=", imageId)
+	object, err := minioconnector.GetObject(imageId)
 	if err != nil {
 		w.WriteHeader(500)
 		return
@@ -47,7 +68,6 @@ func (h *ImageHandler) downloadImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-
 }
 
 func (h *ImageHandler) ServeUploadHTTP(w http.ResponseWriter, r *http.Request) {
@@ -64,33 +84,22 @@ func (h *ImageHandler) ServeUploadHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
-	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "upload"}).Inc()
-	log.Info("incoming file upload request")
-	err := r.ParseMultipartForm(32 << 20)
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
+	jsonapiRuntime := jsonapi.NewRuntime().Instrument("images")
 
-	file, _, err := r.FormFile("uploadfile")
-	defer file.Close()
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
+	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "upload"}).Inc()
+	// TODO check header type
 
 	uploadedFileName := uuid.New().String()
-	err = minioconnector.UploadFileStream(file, uploadedFileName)
+	err := minioconnector.UploadFileStream(r.Body, uploadedFileName)
 	if err != nil {
 		w.WriteHeader(500)
 		return
 	}
 
-	var uploadResponse UploadResponse
-	uploadResponse.FileId = uploadedFileName
-
-	err = json.NewEncoder(w).Encode(uploadResponse)
-	if err != nil {
-		log.Error("error writing response")
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	newImage := &Image{ID: uploadedFileName}
+	if err := jsonapiRuntime.MarshalPayload(w, newImage); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

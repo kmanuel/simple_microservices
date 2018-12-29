@@ -7,14 +7,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_faktory"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_root"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_image"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_root"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_task"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
-	//"github.com/prometheus/client_golang/prometheus"
-	//"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -32,13 +29,21 @@ var (
 )
 
 func main() {
+	log.Info("starting gateway")
+
+	log.Debug("Loading dotenv")
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
 
+	log.Debug("initializing minio")
 	initMinio()
+
+	log.Debug("starting prometheus")
 	go startPrometheus()
+
+	log.Debug("starting REST API")
 	startJsonRestApi()
 }
 
@@ -81,13 +86,16 @@ func startJsonRestApi() {
 	myRouter := mux.NewRouter().StrictSlash(false)
 
 	rootHandler := &api_root.RootHandler{}
-	imageHandler := &api_image.ImageHandler{ RequestCounter: requests }
-	taskHandler := &api_task.TaskHandler{ RequestCounter: requests }
+	imageHandler := &api_image.ImageHandler{RequestCounter: requests}
+	taskHandler := &api_task.TaskHandler{RequestCounter: requests}
 	faktoryHandler := &api_faktory.FaktoryHandler{RequestCounter: requests}
+	imageTransformationHandler := &api_image.ImageTaskHandler{RequestCounter: requests}
 
-	myRouter.HandleFunc("/resources", rootHandler.ServeHTTP)
-	myRouter.HandleFunc("/upload", imageHandler.ServeUploadHTTP)
-	myRouter.HandleFunc("/image/{id}", imageHandler.ServeHTTP)
+	myRouter.HandleFunc("/", rootHandler.ServeHTTP)
+	myRouter.HandleFunc("/images", imageHandler.ServeUploadHTTP)
+	myRouter.HandleFunc("/images/{id}", imageHandler.ServeImage)
+	myRouter.HandleFunc("/images/{id}/download", imageHandler.ServeDownload)
+	myRouter.HandleFunc("/images/{id}/tasks", imageTransformationHandler.ServeHTTP)
 	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
 	myRouter.HandleFunc("/faktory/info", faktoryHandler.ServeHTTP)
 

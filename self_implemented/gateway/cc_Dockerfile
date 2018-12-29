@@ -1,0 +1,6 @@
+FROM golang
+
+COPY gateway .
+COPY .env .env
+
+ENTRYPOINT ["./gateway"]
