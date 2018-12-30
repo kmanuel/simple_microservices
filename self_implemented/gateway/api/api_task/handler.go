@@ -1,6 +1,7 @@
 package api_task
 
 import (
+	"bytes"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
@@ -114,8 +115,12 @@ func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// publish to faktory
-	faktoryTask := mapCropTaskToFaktoryTask(task)
-	err = publishToFactory(faktoryTask)
+	buf := new(bytes.Buffer)
+	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = publishCropToFactory("crop", buf.String())
 	if err != nil {
 		log.Error("failed to publish task to faktory", task)
 		w.WriteHeader(500)

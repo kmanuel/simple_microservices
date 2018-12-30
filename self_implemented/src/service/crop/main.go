@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
+	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
@@ -18,13 +20,19 @@ import (
 	"image/jpeg"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 type Request struct {
 	In     string
 	Width  int
 	Height int
+}
+
+type CropTask struct {
+	ID      string `jsonapi:"primary,crop_task"`
+	ImageId string `jsonapi:"attr,image_id"`
+	Width   int    `jsonapi:"attr,width"`
+	Height  int    `jsonapi:"attr,height"`
 }
 
 func main() {
@@ -86,41 +94,43 @@ func startFaktory() {
 }
 
 func convertTask(ctx worker.Context, args ...interface{}) error {
-	requests.With(prometheus.Labels{"controller":"crop", "status": "fetched"}).Inc()
+	requests.With(prometheus.Labels{"controller": "crop", "status": "fetched"}).Inc()
 
 	log.Info("Working on job %s\n", ctx.Jid())
-	strings, ok := args[0].(map[string]interface{})
-	if !ok {
-		log.Error("couldnt convert args[0]")
-		_ = ctx.Err()
-	} else {
-		update_status.NotifyAboutProcessingStart(strings["id"].(string))
+	log.Info("Context %v\n", ctx)
+	log.Info("Args %v\n", args)
 
-		width, _ := strconv.Atoi(strings["width"].(string))
-		height, _ := strconv.Atoi(strings["height"].(string))
-		err := handle(strings["id"].(string), strings["image_id"].(string), width, height)
-		if err != nil {
-			_ = ctx.Err()
-		}
-
-		update_status.NotifyAboutCompletion(strings["id"].(string))
-		ctx.Done()
-		requests.With(prometheus.Labels{"controller":"crop", "status": "completed"}).Inc()
+	task := new(CropTask)
+	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
+	if err != nil {
+		log.Error("failed to dezerialize task", args)
+		return err
 	}
+
+	update_status.NotifyAboutProcessingStart(task.ID)
+
+	err = handle(task)
+	if err != nil {
+		_ = ctx.Err()
+	}
+
+	update_status.NotifyAboutCompletion(task.ID)
+	ctx.Done()
+	requests.With(prometheus.Labels{"controller": "crop", "status": "completed"}).Inc()
 
 	return nil
 }
 
-func handle(taskId string, inputFileId string, width int, height int) error {
-	downloadedFilePath, err := DownloadFile(inputFileId)
+func handle(t *CropTask) error {
+	downloadedFilePath, err := DownloadFile(t.ImageId)
 	if err != nil {
 		return err
 	}
-	croppedFilePath, err := CropImage(downloadedFilePath, width, height)
+	croppedFilePath, err := CropImage(downloadedFilePath, t.Width, t.Height)
 	if err != nil {
 		return err
 	}
-	_, err = minioconnector.UploadFileWithName(croppedFilePath, taskId)
+	_, err = minioconnector.UploadFileWithName(croppedFilePath, t.ID)
 	return err
 }
 
