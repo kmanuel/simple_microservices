@@ -60,9 +60,6 @@ func (h *TaskHandler) HandleTaskCreation(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if task.TaskParams == nil {
-		task.TaskParams = make(map[string]interface{})
-	}
 
 	// send to request service
 	err := sendToRequestService(task.ID)
@@ -74,13 +71,13 @@ func (h *TaskHandler) HandleTaskCreation(w http.ResponseWriter, r *http.Request)
 	// publish to faktory
 	err = publishToFactory(task)
 	if err != nil {
+		log.Error("failed to publish task to faktory", task)
 		w.WriteHeader(500)
 		return
 	}
 
 	// send response to caller
 	w.WriteHeader(201)
-	w.Header().Set("Content-Type", "application/json")
 	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -98,15 +95,17 @@ func sendToRequestService(taskId string) error {
 }
 
 func publishToFactory(t *Task) error {
-	log.Info("publish to faktory")
+	log.Info("publish to faktory", t)
 	client, err := faktory.Open()
 	if err != nil {
+		log.Error("failed to open connection to faktory", err)
 		return err
 	}
 	job := faktory.NewJob(t.Type, &t.TaskParams)
 	job.Queue = t.Type
 	t.TaskParams["id"] = t.ID
 	job.Custom = t.TaskParams
+	log.Info("publishing job", job)
 	err = client.Push(job)
 
 	return err

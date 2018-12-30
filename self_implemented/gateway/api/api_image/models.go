@@ -14,6 +14,5 @@ type Image struct {
 func (img Image) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
 		"self": fmt.Sprintf("localhost:8080/images/" + img.ID),
-		"download": fmt.Sprintf("localhost:8080/images/" + img.ID + "/download"),
 	}
 }

@@ -15,19 +15,6 @@ type ImageHandler struct{
 	RequestCounter *prometheus.CounterVec
 }
 
-func (h *ImageHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodGet:
-		methodHandler = h.GetImage
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
 func (h *ImageHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
 	var methodHandler http.HandlerFunc
 	switch r.Method {
@@ -39,18 +26,6 @@ func (h *ImageHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	methodHandler(w, r)
-}
-
-func (h *ImageHandler) GetImage(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("images")
-	imageId := mux.Vars(r)["id"]
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	newImage := &Image{ID: imageId}
-	if err := jsonapiRuntime.MarshalPayload(w, newImage); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
 
 func (h *ImageHandler) downloadImage(w http.ResponseWriter, r *http.Request) {

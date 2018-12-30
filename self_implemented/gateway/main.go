@@ -93,8 +93,7 @@ func startJsonRestApi() {
 
 	myRouter.HandleFunc("/", rootHandler.ServeHTTP)
 	myRouter.HandleFunc("/images", imageHandler.ServeUploadHTTP)
-	myRouter.HandleFunc("/images/{id}", imageHandler.ServeImage)
-	myRouter.HandleFunc("/images/{id}/download", imageHandler.ServeDownload)
+	myRouter.HandleFunc("/images/{id}", imageHandler.ServeDownload)
 	myRouter.HandleFunc("/images/{id}/tasks", imageTransformationHandler.ServeHTTP)
 	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
 	myRouter.HandleFunc("/faktory/info", faktoryHandler.ServeHTTP)

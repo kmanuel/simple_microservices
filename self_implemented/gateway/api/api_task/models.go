@@ -14,5 +14,6 @@ type Task struct {
 func (t *Task) JSONAPILinks() *jsonapi.Links {
 	return &jsonapi.Links{
 		"self": fmt.Sprintf("localhost:8080/tasks/" + t.ID),
+		"download_result": fmt.Sprintf("localhost:8080/images/" + t.ID),
 	}
 }
