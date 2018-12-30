@@ -22,9 +22,9 @@ import (
 )
 
 type Request struct {
-	In     string `json:"in,omitempty"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+	In     string
+	Width  int
+	Height int
 }
 
 func main() {
@@ -98,7 +98,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 
 		width, _ := strconv.Atoi(strings["width"].(string))
 		height, _ := strconv.Atoi(strings["height"].(string))
-		err := handle(strings["id"].(string), strings["in"].(string), width, height)
+		err := handle(strings["id"].(string), strings["image_id"].(string), width, height)
 		if err != nil {
 			_ = ctx.Err()
 		}

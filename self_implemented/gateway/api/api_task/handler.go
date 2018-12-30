@@ -1,9 +1,6 @@
 package api_task
 
 import (
-	"bytes"
-	"encoding/json"
-	faktory "github.com/contribsys/faktory/client"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,6 +31,102 @@ func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	methodHandler(w, r)
+}
+
+func (h *TaskHandler) ServeScreenshotHTTP(w http.ResponseWriter, r *http.Request) {
+	var methodHandler http.HandlerFunc
+	switch r.Method {
+	case http.MethodPost:
+		methodHandler = h.createScreenshotTask
+	default:
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	methodHandler(w, r)
+}
+
+func (h *TaskHandler) createScreenshotTask(w http.ResponseWriter, r *http.Request) {
+	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.screenshot.create")
+
+	task := new(ScreenShotTask)
+	task.ID = uuid.New().String()
+
+	// unmarshal request body
+	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// send to request service
+	err := sendToRequestService(task.ID)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	// publish to faktory
+	faktoryTask := mapScreenshotTaskToFaktoryTask(task)
+	err = publishToFactory(faktoryTask)
+	if err != nil {
+		log.Error("failed to publish task to faktory", task)
+		w.WriteHeader(500)
+		return
+	}
+
+	// send response to caller
+	w.WriteHeader(201)
+	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (h *TaskHandler) ServeCropHTTP(w http.ResponseWriter, r *http.Request) {
+	var methodHandler http.HandlerFunc
+	switch r.Method {
+	case http.MethodPost:
+		methodHandler = h.createCropTask
+	default:
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	methodHandler(w, r)
+}
+
+func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
+	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.screenshot.create")
+
+	task := new(CropTask)
+	task.ID = uuid.New().String()
+
+	// unmarshal request body
+	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// send to request service
+	err := sendToRequestService(task.ID)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	// publish to faktory
+	faktoryTask := mapCropTaskToFaktoryTask(task)
+	err = publishToFactory(faktoryTask)
+	if err != nil {
+		log.Error("failed to publish task to faktory", task)
+		w.WriteHeader(500)
+		return
+	}
+
+	// send response to caller
+	w.WriteHeader(201)
+	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *TaskHandler) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
@@ -81,32 +174,4 @@ func (h *TaskHandler) HandleTaskCreation(w http.ResponseWriter, r *http.Request)
 	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func sendToRequestService(taskId string) error {
-	var nt NewTaskType
-	nt.Id = taskId
-	marshal, e := json.Marshal(nt)
-	if e != nil {
-		panic(e)
-	}
-	_, err := http.Post("http://request_service:8080/tasks", "application/json", bytes.NewBuffer([]byte(marshal)))
-	return err
-}
-
-func publishToFactory(t *Task) error {
-	log.Info("publish to faktory", t)
-	client, err := faktory.Open()
-	if err != nil {
-		log.Error("failed to open connection to faktory", err)
-		return err
-	}
-	job := faktory.NewJob(t.Type, &t.TaskParams)
-	job.Queue = t.Type
-	t.TaskParams["id"] = t.ID
-	job.Custom = t.TaskParams
-	log.Info("publishing job", job)
-	err = client.Push(job)
-
-	return err
 }
