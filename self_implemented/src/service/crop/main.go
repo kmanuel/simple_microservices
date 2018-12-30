@@ -95,10 +95,7 @@ func startFaktory() {
 
 func convertTask(ctx worker.Context, args ...interface{}) error {
 	requests.With(prometheus.Labels{"controller": "crop", "status": "fetched"}).Inc()
-
 	log.Info("Working on job %s\n", ctx.Jid())
-	log.Info("Context %v\n", ctx)
-	log.Info("Args %v\n", args)
 
 	task := new(CropTask)
 	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)

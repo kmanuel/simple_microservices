@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
+	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
@@ -18,6 +20,11 @@ import (
 
 type Request struct {
 	Url string `json:"url"`
+}
+
+type ScreenShotTask struct {
+	ID  string `jsonapi:"primary,screenshot_task"`
+	Url string `jsonapi:"attr,url"`
 }
 
 func main() {
@@ -46,7 +53,6 @@ var (
 	)
 )
 
-
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
@@ -56,7 +62,6 @@ func startPrometheus() {
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
-
 
 func startFaktory() {
 	mgr := worker.NewManager()
@@ -81,30 +86,29 @@ func startFaktory() {
 func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 
-
-	strings, ok := args[0].(map[string]interface{})
-	if !ok {
-		_ = ctx.Err()
-		log.Error("couldnt convert args[0]")
-	} else {
-		taskId := strings["id"].(string)
-		update_status.NotifyAboutProcessingStart(taskId)
-
-		outputFilePath, err := takeScreenShot(strings["url"].(string))
-		if err != nil {
-			_ = ctx.Err()
-			return nil
-		}
-
-		_, err = minioconnector.UploadFileWithName(outputFilePath, taskId)
-		if err != nil {
-			_ = ctx.Err()
-			return nil
-		}
-
-		update_status.NotifyAboutCompletion(taskId)
-		ctx.Done()
+	task := new(ScreenShotTask)
+	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
+	if err != nil {
+		log.Error("failed to dezerialize task", args)
+		return err
 	}
+
+	update_status.NotifyAboutProcessingStart(task.ID)
+
+	outputFilePath, err := takeScreenShot(task.Url)
+	if err != nil {
+		_ = ctx.Err()
+		return nil
+	}
+
+	_, err = minioconnector.UploadFileWithName(outputFilePath, task.ID)
+	if err != nil {
+		_ = ctx.Err()
+		return nil
+	}
+
+	update_status.NotifyAboutCompletion(task.ID)
+	ctx.Done()
 
 	return nil
 }

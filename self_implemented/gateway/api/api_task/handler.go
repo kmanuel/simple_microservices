@@ -67,8 +67,12 @@ func (h *TaskHandler) createScreenshotTask(w http.ResponseWriter, r *http.Reques
 	}
 
 	// publish to faktory
-	faktoryTask := mapScreenshotTaskToFaktoryTask(task)
-	err = publishToFactory(faktoryTask)
+	buf := new(bytes.Buffer)
+	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = publishJsonTask("screenshot", buf.String())
 	if err != nil {
 		log.Error("failed to publish task to faktory", task)
 		w.WriteHeader(500)
@@ -120,7 +124,7 @@ func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = publishCropToFactory("crop", buf.String())
+	err = publishJsonTask("crop", buf.String())
 	if err != nil {
 		log.Error("failed to publish task to faktory", task)
 		w.WriteHeader(500)

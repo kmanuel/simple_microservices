@@ -22,7 +22,7 @@ func publishToFactory(t *Task) error {
 	return err
 }
 
-func publishCropToFactory(taskType string, jsonTask string) error {
+func publishJsonTask(taskType string, jsonTask string) error {
 	log.Info("publish to faktory")
 	client, err := faktory.Open()
 	if err != nil {
