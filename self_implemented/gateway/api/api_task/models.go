@@ -18,14 +18,33 @@ func (t *Task) JSONAPILinks() *jsonapi.Links {
 	}
 }
 
-type ScreenShotTask struct {
-	ID		string		`jsonapi:"primary,screenshot_task"`
-	Url		string		`jsonapi:"attr,url"`
-}
-
 type CropTask struct {
 	ID			string		`jsonapi:"primary,crop_task"`
 	ImageId		string		`jsonapi:"attr,image_id"`
 	Width 		int			`jsonapi:"attr,width"`
 	Height 		int			`jsonapi:"attr,height"`
+}
+
+type MostSignificantImageTask struct {
+	ID		string		`jsonapi:"primary,most_significant_image_task"`
+	Url		string		`jsonapi:"attr,url"`
+}
+
+type PortraitTask struct {
+	ID			string		`jsonapi:"primary,portrait_task"`
+	ImageId		string		`jsonapi:"attr,image_id"`
+	Width 		int			`jsonapi:"attr,width"`
+	Height 		int			`jsonapi:"attr,height"`
+}
+
+type OptimizationTask struct {
+	ID			string		`jsonapi:"primary,optimization_task"`
+	ImageId		string		`jsonapi:"attr,image_id"`
+	Width 		int			`jsonapi:"attr,width"`
+	Height 		int			`jsonapi:"attr,height"`
+}
+
+type ScreenShotTask struct {
+	ID		string		`jsonapi:"primary,screenshot_task"`
+	Url		string		`jsonapi:"attr,url"`
 }

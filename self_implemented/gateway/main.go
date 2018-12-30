@@ -98,6 +98,9 @@ func startJsonRestApi() {
 	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
 	myRouter.HandleFunc("/tasks/screenshots", taskHandler.ServeScreenshotHTTP)
 	myRouter.HandleFunc("/tasks/crops", taskHandler.ServeCropHTTP)
+	myRouter.HandleFunc("/tasks/most-significant-images", taskHandler.ServeMostSignificantHTTP)
+	myRouter.HandleFunc("/tasks/optimizations", taskHandler.ServeOptimizationHTTP)
+	myRouter.HandleFunc("/tasks/portraits", taskHandler.ServePortraitHTTP)
 	myRouter.HandleFunc("/faktory/info", faktoryHandler.ServeHTTP)
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))

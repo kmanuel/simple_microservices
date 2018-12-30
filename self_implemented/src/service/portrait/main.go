@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
+	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
@@ -17,10 +19,11 @@ import (
 	"strconv"
 )
 
-type Request struct {
-	In     string `json:"in,omitempty"`
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+type Task struct {
+	ID			string		`jsonapi:"primary,portrait_task"`
+	ImageId		string		`jsonapi:"attr,image_id"`
+	Width 		int			`jsonapi:"attr,width"`
+	Height 		int			`jsonapi:"attr,height"`
 }
 
 func main() {
@@ -49,7 +52,6 @@ var (
 	)
 )
 
-
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
@@ -59,7 +61,6 @@ func startPrometheus() {
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
-
 
 func startFaktory() {
 	mgr := worker.NewManager()
@@ -81,54 +82,39 @@ func startFaktory() {
 	mgr.Run()
 }
 
-
 func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 
-	strings, ok := args[0].(map[string]interface{})
-	if !ok {
-		_ = ctx.Err()
-		log.Error("couldnt convert args[0]")
-	} else {
-		taskId := strings["id"].(string)
-		update_status.NotifyAboutProcessingStart(taskId)
-
-		inputLocation := strings["in"].(string)
-
-		downloadedFilePath, err := minioconnector.DownloadFile(inputLocation)
-		if err != nil {
-			_ = ctx.Err()
-			return err
-		}
-
-		width, err := strconv.Atoi(strings["width"].(string))
-		if err != nil {
-			_ = ctx.Err()
-			return err
-		}
-
-		height, err := strconv.Atoi(strings["height"].(string))
-		if err != nil {
-			_ = ctx.Err()
-			return err
-		}
-
-		outputFilePath, err := ExtractPortrait(downloadedFilePath, width, height)
-		if err != nil {
-			_ = ctx.Err()
-			return err
-		}
-
-		_, err = minioconnector.UploadFileWithName(outputFilePath, taskId)
-		if err != nil {
-			_ = ctx.Err()
-			return err
-		}
-
-		update_status.NotifyAboutCompletion(taskId)
-
-		ctx.Done()
+	task := new(Task)
+	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
+	if err != nil {
+		log.Error("failed to deserialize task", args)
+		return err
 	}
+
+	update_status.NotifyAboutProcessingStart(task.ID)
+
+	downloadedFilePath, err := minioconnector.DownloadFile(task.ImageId)
+	if err != nil {
+		_ = ctx.Err()
+		return err
+	}
+
+	outputFilePath, err := ExtractPortrait(downloadedFilePath, task.Width, task.Height)
+	if err != nil {
+		_ = ctx.Err()
+		return err
+	}
+
+	_, err = minioconnector.UploadFileWithName(outputFilePath, task.ID)
+	if err != nil {
+		_ = ctx.Err()
+		return err
+	}
+
+	update_status.NotifyAboutCompletion(task.ID)
+
+	ctx.Done()
 
 	return nil
 }

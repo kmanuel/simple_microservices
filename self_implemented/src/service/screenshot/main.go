@@ -22,7 +22,7 @@ type Request struct {
 	Url string `json:"url"`
 }
 
-type ScreenShotTask struct {
+type Task struct {
 	ID  string `jsonapi:"primary,screenshot_task"`
 	Url string `jsonapi:"attr,url"`
 }
@@ -86,10 +86,10 @@ func startFaktory() {
 func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
 
-	task := new(ScreenShotTask)
+	task := new(Task)
 	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
 	if err != nil {
-		log.Error("failed to dezerialize task", args)
+		log.Error("failed to deserialize task", args)
 		return err
 	}
 

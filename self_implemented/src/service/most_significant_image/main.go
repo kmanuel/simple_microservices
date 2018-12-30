@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"github.com/advancedlogic/GoOse"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
+	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
@@ -19,8 +21,9 @@ import (
 
 const OutputImageLocation = "/tmp/"
 
-type Request struct {
-	In     string `json:"url,omitempty"`
+type Task struct {
+	ID  string `jsonapi:"primary,most_significant_image_task"`
+	Url string `jsonapi:"attr,url"`
 }
 
 func main() {
@@ -49,7 +52,6 @@ var (
 	)
 )
 
-
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
@@ -59,7 +61,6 @@ func startPrometheus() {
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
-
 
 func startFaktory() {
 	mgr := worker.NewManager()
@@ -82,32 +83,33 @@ func startFaktory() {
 
 func convertTask(ctx worker.Context, args ...interface{}) error {
 	log.Info("Working on job %s\n", ctx.Jid())
-	strings, ok := args[0].(map[string]interface{})
-	if !ok {
-		_ = ctx.Err()
-		return nil
-	} else {
-		update_status.NotifyAboutProcessingStart(strings["id"].(string))
 
-		outputFile := OutputImageLocation + uuid.New().String() + ".jpg"
-
-		err := ExtractMostSignificantImage(strings["url"].(string), outputFile)
-		if err != nil {
-			_ = ctx.Err()
-			return nil
-		}
-
-		_, err = minioconnector.UploadFileWithName(outputFile, strings["id"].(string))
-		if err != nil {
-			_ = ctx.Err()
-			return nil
-		}
-
-		update_status.NotifyAboutCompletion(strings["id"].(string))
-
-		ctx.Done()
+	task := new(Task)
+	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
+	if err != nil {
+		log.Error("failed to deserialize task", args)
+		return err
 	}
 
+	update_status.NotifyAboutProcessingStart(task.ID)
+
+	outputFile := OutputImageLocation + uuid.New().String() + ".jpg"
+
+	err = ExtractMostSignificantImage(task.Url, outputFile)
+	if err != nil {
+		_ = ctx.Err()
+		return nil
+	}
+
+	_, err = minioconnector.UploadFileWithName(outputFile, task.ID)
+	if err != nil {
+		_ = ctx.Err()
+		return nil
+	}
+
+	update_status.NotifyAboutCompletion(task.ID)
+
+	ctx.Done()
 	return nil
 }
 

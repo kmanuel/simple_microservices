@@ -22,13 +22,7 @@ import (
 	"os"
 )
 
-type Request struct {
-	In     string
-	Width  int
-	Height int
-}
-
-type CropTask struct {
+type Task struct {
 	ID      string `jsonapi:"primary,crop_task"`
 	ImageId string `jsonapi:"attr,image_id"`
 	Width   int    `jsonapi:"attr,width"`
@@ -97,10 +91,10 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	requests.With(prometheus.Labels{"controller": "crop", "status": "fetched"}).Inc()
 	log.Info("Working on job %s\n", ctx.Jid())
 
-	task := new(CropTask)
+	task := new(Task)
 	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
 	if err != nil {
-		log.Error("failed to dezerialize task", args)
+		log.Error("failed to deserialize task", args)
 		return err
 	}
 
@@ -118,7 +112,7 @@ func convertTask(ctx worker.Context, args ...interface{}) error {
 	return nil
 }
 
-func handle(t *CropTask) error {
+func handle(t *Task) error {
 	downloadedFilePath, err := DownloadFile(t.ImageId)
 	if err != nil {
 		return err
