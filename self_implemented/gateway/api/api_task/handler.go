@@ -22,10 +22,21 @@ type TaskHandler struct{
 func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var methodHandler http.HandlerFunc
 	switch r.Method {
-	case http.MethodPost:
-		methodHandler = h.HandleTaskCreation
 	case http.MethodGet:
 		methodHandler = h.HandleGetTasks
+	default:
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	methodHandler(w, r)
+}
+
+func (h *TaskHandler) ServeCropHTTP(w http.ResponseWriter, r *http.Request) {
+	var methodHandler http.HandlerFunc
+	switch r.Method {
+	case http.MethodPost:
+		methodHandler = h.createCropTask
 	default:
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
@@ -51,56 +62,34 @@ func (h *TaskHandler) createScreenshotTask(w http.ResponseWriter, r *http.Reques
 	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.screenshot.create")
 
 	task := new(ScreenShotTask)
-	task.ID = uuid.New().String()
-
 	// unmarshal request body
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	// send to request service
-	err := sendToRequestService(task.ID)
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
-
-	// publish to faktory
+	task.ID = uuid.New().String()
 	buf := new(bytes.Buffer)
 	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = publishJsonTask("screenshot", buf.String())
+
+	err := h.publishTask("screenshot", buf.String(), task.ID)
 	if err != nil {
-		log.Error("failed to publish task to faktory", task)
-		w.WriteHeader(500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// send response to caller
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
 
-func (h *TaskHandler) ServeCropHTTP(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodPost:
-		methodHandler = h.createCropTask
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
 }
 
 func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.screenshot.create")
+	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.crop.create")
 
 	task := new(CropTask)
 	task.ID = uuid.New().String()
@@ -110,29 +99,20 @@ func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	// send to request service
-	err := sendToRequestService(task.ID)
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
-
-	// publish to faktory
 	buf := new(bytes.Buffer)
 	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = publishJsonTask("crop", buf.String())
+
+	err := h.publishTask("crop", buf.String(), task.ID)
 	if err != nil {
-		log.Error("failed to publish task to faktory", task)
-		w.WriteHeader(500)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// send response to caller
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -149,38 +129,17 @@ func (h *TaskHandler) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
 	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
 }
 
-func (h *TaskHandler) HandleTaskCreation(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.create")
+func (h *TaskHandler) publishTask(queue string, taskJson string, id string) error {
 	h.RequestCounter.With(prometheus.Labels{"controller":"gateway", "type": "create_task"}).Inc()
-	log.Info("received request for new task")
-
-	task := new(Task)
-	task.ID = uuid.New().String()
-
-	// unmarshal request body
-	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// send to request service
-	err := sendToRequestService(task.ID)
+	err := sendToRequestService(id)
 	if err != nil {
-		w.WriteHeader(500)
-		return
+		return err
 	}
 
-	// publish to faktory
-	err = publishToFactory(task)
+	err = publishToFaktory(queue, taskJson)
 	if err != nil {
-		log.Error("failed to publish task to faktory", task)
-		w.WriteHeader(500)
-		return
+		return err
 	}
 
-	// send response to caller
-	w.WriteHeader(201)
-	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	return nil
 }
