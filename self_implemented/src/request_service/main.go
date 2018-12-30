@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
-	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/database"
 	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/resolver"
 	"github.com/manyminds/api2go"
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,44 +14,46 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 type NewTask struct {
-	Id	string	`json:"id"`
+	TaskId string `json:"id"`
 }
 
-
 type TaskStatus struct {
-	Id 		string	`json:"id"`
-	Status 	string 	`json:"status"`
+	gorm.Model
+	TaskId string `json:"task_id"`
+	Status string `json:"status"`
 }
 
 type TaskStatusUpdate struct {
-	Status	string	`json:"status"`
+	Status string `json:"status"`
 }
+
+var dbHost string
+var dbPort string
+var dbUser string
+var dbName string
+var dbPassword string
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
-	dbPortStr := os.Getenv("POSTGRES_PORT")
-	dbPort, err := strconv.Atoi(dbPortStr)
-	if err != nil {
-		panic(err)
-	}
+	dbHost = os.Getenv("POSTGRES_HOST")
+	dbPort = os.Getenv("POSTGRES_PORT")
+	dbUser = os.Getenv("POSTGRES_USER")
+	dbName = os.Getenv("POSTGRES_DB")
+	dbPassword = os.Getenv("POSTGRES_PASSWORD")
 
-	err = database.Init(
-		os.Getenv("POSTGRES_HOST"),
-		dbPort,
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_DB"),
-	)
+	db, err := openDb()
+	defer db.Close()
 	if err != nil {
 		panic(err)
+		return
 	}
+	db.AutoMigrate(&TaskStatus{})
 
 	go startPrometheus()
 
@@ -78,7 +80,6 @@ func startPrometheus() {
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
-
 func startRestApi() {
 	port := 8080
 	api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: port})
@@ -97,25 +98,42 @@ func CreateNew(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var newTask NewTask
 	_ = json.NewDecoder(r.Body).Decode(&newTask)
 
-	err := database.Persist(newTask.Id)
-	if err != nil {
-		w.WriteHeader(500)
-	} else {
-		w.WriteHeader(201)
+	taskStatus := TaskStatus{
+		TaskId: newTask.TaskId,
+		Status: "new",
 	}
-}
 
-func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	log.Info("getting all tasks")
-
-	all, err := database.FetchAll()
+	db, err := openDb()
+	defer db.Close()
 	if err != nil {
 		w.WriteHeader(500)
 		return
 	}
 
+	db.Create(&taskStatus)
+
+	w.WriteHeader(201)
+}
+
+func GetTasks(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log.Info("getting all tasks")
+
+	db, err := openDb()
+	defer db.Close()
+	if err != nil {
+		log.Error("failed to open db", err)
+		w.WriteHeader(500)
+		return
+	}
+
+	var tasks []TaskStatus
+	if err := db.Find(&tasks).Error; err != nil {
+		log.Error("failed to fetch all taskStatus from db")
+		panic(err)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(all)
+	err = json.NewEncoder(w).Encode(tasks)
 	if err != nil {
 		log.Error("failed to write response")
 	}
@@ -127,38 +145,55 @@ func UpdateStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	var statusUpdate TaskStatusUpdate
 	_ = json.NewDecoder(r.Body).Decode(&statusUpdate)
 
-	taskId := ps.ByName("taskId")
-
-	err := database.UpdateStatus(taskId, statusUpdate.Status)
-	if err != nil {
-		w.WriteHeader(500)
-	} else {
-		w.WriteHeader(200)
-	}
-}
-
-func GetStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	log.Info("received GET status request")
-
-	taskId := ps.ByName("taskId")
-
-	status, err := database.FetchStatus(taskId)
+	db, err := openDb()
+	defer db.Close()
 	if err != nil {
 		w.WriteHeader(500)
 		return
 	}
 
-	var t TaskStatus
-	t.Id = taskId
-	t.Status = status
+	var taskStatus TaskStatus
+	if err := db.Where("task_id = ? ", ps.ByName("taskId")).First(&taskStatus).Error; err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	taskStatus.Status = statusUpdate.Status
+	db.Save(&taskStatus)
+
+	w.WriteHeader(200)
+}
+
+func GetStatus(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
+	log.Info("received GET status request")
+
+	db, err := openDb()
+	defer db.Close()
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+
+	var taskStatus TaskStatus
+	if err := db.Where("task_id = ? ", ps.ByName("taskId")).First(&taskStatus).Error; err != nil {
+		w.WriteHeader(500)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(t)
+	err = json.NewEncoder(w).Encode(taskStatus)
 	if err != nil {
 		log.Error("failed to write response")
 	}
 }
 
-func GetHealth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func GetHealth(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 	w.WriteHeader(200)
+}
+
+func openDb() (*gorm.DB, error) {
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
+	db, err := gorm.Open("postgres", psqlInfo)
+	return db, err
 }
