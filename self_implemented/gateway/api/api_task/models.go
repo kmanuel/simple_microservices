@@ -6,7 +6,6 @@ import (
 )
 
 type TaskStatus struct {
-	ObjID    string `jsonapi:"primary,task_status"`
 	TaskID   string `jsonapi:"attr,task_id"`
 	Status   string `jsonapi:"attr,status"`
 	TaskType string `jsonapi:"attr,task_type"`
