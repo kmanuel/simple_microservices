@@ -18,6 +18,10 @@ func (r *TaskStatus) JSONAPILinks() *jsonapi.Links {
 	}
 }
 
+type GenericTask struct {
+	ID	string
+}
+
 type Task struct {
 	ID         string                 `jsonapi:"primary,tasks"`
 	Type       string                 `jsonapi:"attr,task_type"`

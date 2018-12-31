@@ -25,7 +25,6 @@ func NotifyAboutCompletion(taskId string) {
 func updateTaskStatus(taskId string, newStatus string) error {
 	taskStatus := &TaskStatus{
 		TaskID:   taskId,
-		TaskType: "screenshot",
 		Status:   newStatus,
 	}
 	buf := new(bytes.Buffer)

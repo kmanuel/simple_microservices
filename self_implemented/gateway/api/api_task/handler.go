@@ -111,8 +111,7 @@ func (h *TaskHandler) createScreenshotTask(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	//err := h.publishScreenshotTask("screenshot", buf.String(), task)
-	err := h.publishScreenshotTask("screenshot", task)
+	err := h.publishTask("screenshot", buf.String(), task.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -253,36 +252,30 @@ func (h *TaskHandler) createPortraitTask(w http.ResponseWriter, r *http.Request)
 func (h *TaskHandler) publishTask(queue string, taskJson string, id string) error {
 	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "create_task"}).Inc()
 
-	_, err := http.Post("http://request_service:8080/tasks", "application/json", bytes.NewBuffer([]byte(taskJson)))
-	if err != nil {
+	if err := updateStatus(queue, id); err != nil {
 		return err
 	}
 
-	err = publishToFaktory(queue, taskJson)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return publishToFaktory(queue, taskJson)
 }
+//
+//func (h *TaskHandler) publishScreenshotTask(queue string, taskId string) error {
+//	buf := new(bytes.Buffer)
+//	if err := jsonapi.MarshalPayload(buf, task); err != nil {
+//		return err
+//	}
+//	taskJson := buf.String()
+//	err := publishToFaktory(queue, taskJson)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return updateStatus(queue, taskId)
+//}
 
-func (h *TaskHandler) publishScreenshotTask(queue string, task *ScreenShotTask) error {
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, task); err != nil {
-		return err
-	}
-	taskJson := buf.String()
-	err := publishToFaktory(queue, taskJson)
-	if err != nil {
-		return err
-	}
-
-	return updateStatus(queue, task)
-}
-
-func updateStatus(queue string, task *ScreenShotTask) error {
+func updateStatus(queue string, taskId string) error {
 	taskStatus := &TaskStatus{
-		TaskID: task.ID,
+		TaskID: taskId,
 		TaskType: queue,
 	}
 	buf := new(bytes.Buffer)
