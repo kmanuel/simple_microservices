@@ -49,6 +49,7 @@ func startRestApi() {
 
 	taskHandler := &api.TaskHandler{RequestCounter: requests}
 	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
+	myRouter.HandleFunc("/tasks/status/{id}", taskHandler.ServeUpdateStatus)
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 	//log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", 8080), handler))

@@ -11,10 +11,6 @@ import (
 	"net/url"
 )
 
-type NewTaskType struct {
-	Id string `json:"id"`
-}
-
 type TaskHandler struct {
 	RequestCounter *prometheus.CounterVec
 }
@@ -115,7 +111,8 @@ func (h *TaskHandler) createScreenshotTask(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err := h.publishTask("screenshot", buf.String(), task.ID)
+	//err := h.publishScreenshotTask("screenshot", buf.String(), task)
+	err := h.publishScreenshotTask("screenshot", task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -145,7 +142,6 @@ func (h *TaskHandler) createMostSignificantTask(w http.ResponseWriter, r *http.R
 	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.significant.create")
 
 	task := new(MostSignificantImageTask)
-	// unmarshal request body
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -256,7 +252,8 @@ func (h *TaskHandler) createPortraitTask(w http.ResponseWriter, r *http.Request)
 
 func (h *TaskHandler) publishTask(queue string, taskJson string, id string) error {
 	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "create_task"}).Inc()
-	err := sendToRequestService(id)
+
+	_, err := http.Post("http://request_service:8080/tasks", "application/json", bytes.NewBuffer([]byte(taskJson)))
 	if err != nil {
 		return err
 	}
@@ -267,4 +264,31 @@ func (h *TaskHandler) publishTask(queue string, taskJson string, id string) erro
 	}
 
 	return nil
+}
+
+func (h *TaskHandler) publishScreenshotTask(queue string, task *ScreenShotTask) error {
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, task); err != nil {
+		return err
+	}
+	taskJson := buf.String()
+	err := publishToFaktory(queue, taskJson)
+	if err != nil {
+		return err
+	}
+
+	return updateStatus(queue, task)
+}
+
+func updateStatus(queue string, task *ScreenShotTask) error {
+	taskStatus := &TaskStatus{
+		TaskID: task.ID,
+		TaskType: queue,
+	}
+	buf := new(bytes.Buffer)
+	if err := jsonapi.MarshalPayload(buf, taskStatus); err != nil {
+		return err
+	}
+	_, err := http.Post("http://request_service:8080/tasks", jsonapi.MediaType, buf)
+	return err
 }
