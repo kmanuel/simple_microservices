@@ -1,10 +1,11 @@
-package api
+package data
 
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/model"
 	"os"
 )
 
@@ -15,7 +16,7 @@ func InitDb() {
 		panic(err)
 		return
 	}
-	db.AutoMigrate(&TaskStatus{})
+	db.AutoMigrate(&model.TaskStatus{})
 }
 
 func OpenDb() (*gorm.DB, error) {
@@ -44,7 +45,7 @@ func GetCountOfNotCompletedTasksOfType(taskType string) float64 {
 	}
 
 	var count float64
-	db.Model(&TaskStatus{}).Where("task_type = ? AND status <> 'completed'", taskType).Count(&count)
+	db.Model(&model.TaskStatus{}).Where("task_type = ? AND status <> 'completed'", taskType).Count(&count)
 
 	return count
 }

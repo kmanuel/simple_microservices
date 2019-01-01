@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/gorilla/mux"
 	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/api"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/data"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ import (
 )
 
 func main() {
-	api.InitDb()
+	data.InitDb()
 
 	go startPrometheus()
 
@@ -51,7 +52,7 @@ func registerPendingGauge(typeName string) {
 			Name: gaugeName,
 		},
 		func() float64 {
-			return api.GetCountOfNotCompletedTasksOfType(typeName)
+			return data.GetCountOfNotCompletedTasksOfType(typeName)
 		},
 	)); err == nil {
 		log.Info("GaugeFunc '" + gaugeName +" registered.")

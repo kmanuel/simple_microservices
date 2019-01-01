@@ -3,6 +3,8 @@ package api
 import (
 	"github.com/google/jsonapi"
 	"github.com/gorilla/mux"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/data"
+	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/model"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"net/http"
@@ -16,7 +18,7 @@ type TaskHandler struct {
 func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	log.Info("getting all tasks")
 
-	db, err := OpenDb()
+	db, err := data.OpenDb()
 	defer db.Close()
 	if err != nil {
 		log.Error("failed to open db", err)
@@ -24,13 +26,13 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tasks []*TaskStatus
+	var tasks []*model.TaskStatus
 	if err := db.Find(&tasks).Error; err != nil {
 		log.Error("failed to fetch all taskStatus from db")
 		w.WriteHeader(500)
 		return
 	}
-	list := TaskStatusList{
+	list := model.TaskStatusList{
 		ID:    "1",
 		Tasks: tasks,
 	}
@@ -42,10 +44,10 @@ func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	log.Info("creating new TaskStatus")
+	log.Info("creating new model.TaskStatus")
 	jsonapiRuntime := jsonapi.NewRuntime()
 
-	newTask := new(TaskStatus)
+	newTask := new(model.TaskStatus)
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, newTask); err != nil {
 		log.Error("unmarshalling failure ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,7 +55,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}
 	newTask.Status = "new"
 
-	db, err := OpenDb()
+	db, err := data.OpenDb()
 	defer db.Close()
 	if err != nil {
 		log.Error("OpenDb() failure ", err)
@@ -76,21 +78,21 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	jsonapiRuntime := jsonapi.NewRuntime()
 
-	updateRequest := new(TaskStatus)
+	updateRequest := new(model.TaskStatus)
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, updateRequest); err != nil {
 		log.Error("unmarshalling failure ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	db, err := OpenDb()
+	db, err := data.OpenDb()
 	defer db.Close()
 	if err != nil {
 		w.WriteHeader(500)
 		return
 	}
 
-	var taskStatus TaskStatus
+	var taskStatus model.TaskStatus
 	if err := db.Where("task_id = ?", taskId).First(&taskStatus).Error; err != nil {
 		log.Error("failed to find taskStatus object to update")
 		w.WriteHeader(500)
