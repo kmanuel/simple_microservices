@@ -91,7 +91,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var taskStatus TaskStatus
-	if err := db.Where("task_id = ? ", taskId).First(&taskStatus).Error; err != nil {
+	if err := db.Where("task_id = ?", taskId).First(&taskStatus).Error; err != nil {
 		log.Error("failed to find taskStatus object to update")
 		w.WriteHeader(500)
 		return

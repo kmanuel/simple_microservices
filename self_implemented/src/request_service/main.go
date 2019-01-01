@@ -37,6 +37,18 @@ var (
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
+	if err := prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name:      "screenshot_tasks_pending",
+			Help:      "Number of screenshot tasks in status new or processing.",
+		},
+		func() float64 {
+			return api.GetCountOfNotCompletedTasksOfType("screenshot")
+		},
+	)); err == nil {
+		log.Info("GaugeFunc 'screenshot_tasks_pending' registered.")
+	}
+
 	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
 
 	flag.Parse()

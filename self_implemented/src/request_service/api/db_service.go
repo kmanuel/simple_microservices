@@ -35,3 +35,17 @@ func OpenDb() (*gorm.DB, error) {
 	db, err := gorm.Open("postgres", psqlInfo)
 	return db, err
 }
+
+func GetCountOfNotCompletedTasksOfType(taskType string) float64 {
+	db, e := OpenDb()
+	defer db.Close()
+	if e != nil {
+		return -1
+	}
+
+	var count float64
+	db.Model(&TaskStatus{}).Where("task_type = ? AND status <> 'completed'", taskType).Count(&count)
+
+	return count
+}
+
