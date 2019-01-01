@@ -13,9 +13,7 @@ import (
 
 func main() {
 	data.InitDb()
-
 	go startPrometheus()
-
 	startRestApi()
 }
 

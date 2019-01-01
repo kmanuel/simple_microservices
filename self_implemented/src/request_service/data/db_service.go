@@ -6,12 +6,13 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/simple_microservices/self_implemented/src/request_service/model"
+	"github.com/prometheus/common/log"
 	"os"
 )
 
 func InitDb() {
 	db, err := OpenDb()
-	defer db.Close()
+	defer closeDb(db)
 	if err != nil {
 		panic(err)
 		return
@@ -37,9 +38,16 @@ func OpenDb() (*gorm.DB, error) {
 	return db, err
 }
 
+func closeDb(db *gorm.DB) {
+	err := db.Close()
+	if err != nil {
+		log.Error(err)
+	}
+}
+
 func GetCountOfNotCompletedTasksOfType(taskType string) float64 {
 	db, e := OpenDb()
-	defer db.Close()
+	defer closeDb(db)
 	if e != nil {
 		return -1
 	}
@@ -50,3 +58,51 @@ func GetCountOfNotCompletedTasksOfType(taskType string) float64 {
 	return count
 }
 
+func FetchTaskList() (*model.TaskStatusList, error) {
+	db, err := OpenDb()
+	defer closeDb(db)
+	if err != nil {
+		return nil, err
+	}
+
+	var tasks []*model.TaskStatus
+	if err := db.Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	list := model.TaskStatusList{
+		ID:    "1",
+		Tasks: tasks,
+	}
+	return &list, nil
+}
+
+func CreateNewTask(newTask *model.TaskStatus) error {
+	newTask.Status = "new"
+
+	db, err := OpenDb()
+	defer closeDb(db)
+	if err != nil {
+		return err
+	}
+
+	db.Create(&newTask)
+	return nil
+}
+
+func UpdateTaskStatus(updateRequest *model.TaskStatus) error {
+	db, err := OpenDb()
+	defer closeDb(db)
+	if err != nil {
+		return err
+	}
+
+	var taskStatus model.TaskStatus
+	if err := db.Where("task_id = ?", updateRequest.TaskID).First(&taskStatus).Error; err != nil {
+		return err
+	}
+
+	taskStatus.Status = updateRequest.Status
+	db.Save(&taskStatus)
+
+	return nil
+}
