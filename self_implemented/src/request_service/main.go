@@ -48,71 +48,20 @@ func startRestApi() {
 	myRouter := mux.NewRouter().StrictSlash(false)
 
 	taskHandler := &api.TaskHandler{RequestCounter: requests}
-	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
-	myRouter.HandleFunc("/tasks/status/{id}", taskHandler.ServeUpdateStatus)
+
+	myRouter.
+		Path("/tasks").
+		Methods(http.MethodGet).
+		HandlerFunc(taskHandler.GetTasks)
+	myRouter.
+		Path("/tasks").
+		Methods(http.MethodPost).
+		HandlerFunc(taskHandler.CreateTask)
+
+	myRouter.
+		Path("/tasks/status/{id}").
+		Methods(http.MethodPost).
+		HandlerFunc(taskHandler.UpdateTask)
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
-	//log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", 8080), handler))
-	//
-	//api := api2go.NewAPIWithResolver("v0", &resolver.RequestURL{Port: 8080})
-	//handler := api.Handler().(*httprouter.Router)
-	//
-	//handler.POST("/tasks/:taskId/status", UpdateStatus)
-	//handler.GET("/tasks/:taskId/status", GetStatus)
-	//handler.GET("/health", GetHealth)
-	//log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", 8080), handler))
 }
-
-//
-//
-//func UpdateStatus(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-//	log.Info("received update request")
-//
-//	var statusUpdate TaskStatusUpdateDTO
-//	_ = json.NewDecoder(r.Body).Decode(&statusUpdate)
-//
-//	db, err := openDb()
-//	defer db.Close()
-//	if err != nil {
-//		w.WriteHeader(500)
-//		return
-//	}
-//
-//	var taskStatus TaskStatus
-//	if err := db.Where("task_id = ? ", ps.ByName("taskId")).First(&taskStatus).Error; err != nil {
-//		w.WriteHeader(500)
-//		return
-//	}
-//
-//	taskStatus.Status = statusUpdate.Status
-//	db.Save(&taskStatus)
-//
-//	w.WriteHeader(200)
-//}
-//
-//func GetStatus(w http.ResponseWriter, _ *http.Request, ps httprouter.Params) {
-//	log.Info("received GET status request")
-//
-//	db, err := openDb()
-//	defer db.Close()
-//	if err != nil {
-//		w.WriteHeader(500)
-//		return
-//	}
-//
-//	var taskStatus TaskStatus
-//	if err := db.Where("task_id = ? ", ps.ByName("taskId")).First(&taskStatus).Error; err != nil {
-//		w.WriteHeader(500)
-//		return
-//	}
-//
-//	w.Header().Set("Content-Type", "application/json")
-//	err = json.NewEncoder(w).Encode(taskStatus)
-//	if err != nil {
-//		log.Error("failed to write response")
-//	}
-//}
-//
-//func GetHealth(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
-//	w.WriteHeader(200)
-//}

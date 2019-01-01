@@ -10,24 +10,10 @@ import (
 
 type TaskHandler struct {
 	RequestCounter *prometheus.CounterVec
+	NotFoundHandler http.Handler
 }
 
-func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodGet:
-		methodHandler = h.getTasks
-	case http.MethodPost:
-		methodHandler = h.createTask
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
-func (h *TaskHandler) getTasks(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	log.Info("getting all tasks")
 
 	db, err := OpenDb()
@@ -45,7 +31,7 @@ func (h *TaskHandler) getTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	list := TaskStatusList{
-		ID: "1",
+		ID:    "1",
 		Tasks: tasks,
 	}
 
@@ -55,11 +41,10 @@ func (h *TaskHandler) getTasks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *TaskHandler)  createTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	log.Info("creating new TaskStatus")
 	jsonapiRuntime := jsonapi.NewRuntime()
 
-	// unmarshal request body
 	newTask := new(TaskStatus)
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, newTask); err != nil {
 		log.Error("unmarshalling failure ", err)
@@ -84,28 +69,13 @@ func (h *TaskHandler)  createTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *TaskHandler) ServeUpdateStatus(w http.ResponseWriter, r *http.Request) {
-	log.Info("serving update request")
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodPost:
-		methodHandler = h.updateTask
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
-func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request) {
+func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	log.Info("received update request")
 
 	taskId := mux.Vars(r)["id"]
 
 	jsonapiRuntime := jsonapi.NewRuntime()
 
-	// unmarshal request body
 	updateRequest := new(TaskStatus)
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, updateRequest); err != nil {
 		log.Error("unmarshalling failure ", err)
@@ -132,6 +102,3 @@ func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 }
-
-
-
