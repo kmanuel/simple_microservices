@@ -224,7 +224,6 @@ func (h *TaskHandler) createPortraitTask(w http.ResponseWriter, r *http.Request)
 	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.portrait.create")
 
 	task := new(PortraitTask)
-	// unmarshal request body
 	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -242,7 +241,6 @@ func (h *TaskHandler) createPortraitTask(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// send response to caller
 	w.WriteHeader(http.StatusCreated)
 	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -258,20 +256,6 @@ func (h *TaskHandler) publishTask(queue string, taskJson string, id string) erro
 
 	return publishToFaktory(queue, taskJson)
 }
-//
-//func (h *TaskHandler) publishScreenshotTask(queue string, taskId string) error {
-//	buf := new(bytes.Buffer)
-//	if err := jsonapi.MarshalPayload(buf, task); err != nil {
-//		return err
-//	}
-//	taskJson := buf.String()
-//	err := publishToFaktory(queue, taskJson)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return updateStatus(queue, taskId)
-//}
 
 func updateStatus(queue string, taskId string) error {
 	taskStatus := &TaskStatus{

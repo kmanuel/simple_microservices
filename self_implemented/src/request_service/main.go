@@ -10,12 +10,6 @@ import (
 	"net/http"
 )
 
-var dbHost string
-var dbPort string
-var dbUser string
-var dbName string
-var dbPassword string
-
 func main() {
 	api.InitDb()
 
@@ -37,23 +31,31 @@ var (
 func startPrometheus() {
 	prometheus.MustRegister(requests)
 
-	if err := prometheus.Register(prometheus.NewGaugeFunc(
-		prometheus.GaugeOpts{
-			Name:      "screenshot_tasks_pending",
-			Help:      "Number of screenshot tasks in status new or processing.",
-		},
-		func() float64 {
-			return api.GetCountOfNotCompletedTasksOfType("screenshot")
-		},
-	)); err == nil {
-		log.Info("GaugeFunc 'screenshot_tasks_pending' registered.")
-	}
+	registerPendingGauge("screenshot")
+	registerPendingGauge("crop")
+	registerPendingGauge("most_significant_image")
+	registerPendingGauge("optimization")
+	registerPendingGauge("portrait")
 
 	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
 
 	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+func registerPendingGauge(typeName string) {
+	gaugeName := typeName + "_tasks_pending"
+	if err := prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: gaugeName,
+		},
+		func() float64 {
+			return api.GetCountOfNotCompletedTasksOfType(typeName)
+		},
+	)); err == nil {
+		log.Info("GaugeFunc '" + gaugeName +" registered.")
+	}
 }
 
 func startRestApi() {
