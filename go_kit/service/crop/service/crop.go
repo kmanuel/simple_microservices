@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/google/uuid"
 	"github.com/kmanuel/minioconnector"
+	"github.com/kmanuel/simple_microservices/go_kit/service/crop/model"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 	"github.com/prometheus/common/log"
@@ -12,16 +13,20 @@ import (
 )
 
 type CropService interface {
-	CropImage(inputImg string, width int, height int) (string, error)
+	CropImage(task *model.CropTask) (string, error)
 }
 
-type CropServiceImpl struct{}
-
-func downloadFile(objectName string) (string, error) {
-	return minioconnector.DownloadFile(objectName)
+func NewCropService() CropService {
+	return cropServiceImpl{}
 }
 
-func (CropServiceImpl) CropImage(imageId string, width int, height int) (string, error) {
+type cropServiceImpl struct{}
+
+func (cropServiceImpl) CropImage(task *model.CropTask) (string, error) {
+	imageId := task.ImageId
+	width := task.Width
+	height := task.Height
+
 	inputImg, err := downloadFile(imageId)
 	if err != nil {
 		return "", err
@@ -53,4 +58,8 @@ func (CropServiceImpl) CropImage(imageId string, width int, height int) (string,
 
 	log.Info("finished cropping api_image")
 	return outputFilePath, nil
+}
+
+func downloadFile(objectName string) (string, error) {
+	return minioconnector.DownloadFile(objectName)
 }

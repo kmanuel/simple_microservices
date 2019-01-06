@@ -1,6 +1,9 @@
 package model
 
-import "github.com/jinzhu/gorm"
+import (
+	"fmt"
+	"github.com/jinzhu/gorm"
+)
 
 type TaskStatusList struct {
 	ID    string        `jsonapi:"primary,task_status_list"`
@@ -14,3 +17,6 @@ type TaskStatus struct {
 	TaskType   string `jsonapi:"attr,task_type"`
 }
 
+func (ts TaskStatus) String() string {
+	return fmt.Sprintf("{TaskStatus[TaskID=%s][Status=%s][TaskType=%s]}", ts.TaskID, ts.Status, ts.TaskType)
+}
