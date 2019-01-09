@@ -34,7 +34,6 @@ func main() {
 	}
 
 	var statusClient status_client.StatusClient
-
 	statusClient = status_client.NewStatusClient(taskType)
 
 	var faktoryService service.FaktoryService
