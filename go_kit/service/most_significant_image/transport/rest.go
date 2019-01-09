@@ -10,11 +10,11 @@ import (
 	"net/http"
 )
 
-func MakeMostSignificantImageEndpoint(s service.MostSignificantImageService) endpoint.Endpoint {
+func CreateRestHandler(s service.FaktoryPublishService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		task := request.(*model.MostSignificantImageTask)
 		task.ID = uuid.New().String()
-		_, err := s.ExtractMostSignificantImage(task)
+		err := s.PublishTask(task)
 		if err != nil {
 			return nil, err
 		}
