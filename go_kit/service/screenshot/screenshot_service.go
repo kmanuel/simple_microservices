@@ -1,4 +1,4 @@
-package screenshot
+package main
 
 import (
 	"flag"
@@ -39,7 +39,7 @@ func main() {
 	statusClient = status_client.NewStatusClient(taskType)
 
 	var screenshotService service.ScreenshotService
-	screenshotService = service.NewScreenshotService(statusClient)
+	screenshotService = service.NewScreenshotService()
 
 	var faktoryService service.FaktoryService
 	faktoryService = service.NewFaktoryService(taskType)

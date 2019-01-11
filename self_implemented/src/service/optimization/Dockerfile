@@ -24,4 +24,4 @@ RUN go build
 
 ENV FAKTORY_URL tcp://faktory:7419
 
-ENTRYPOINT ["go", "run", "main.go"]]
+ENTRYPOINT ["go", "run", "main.go"]

@@ -15,5 +15,9 @@ func (mw StatusPerformMiddleware) HandleTask(task *model.ScreenshotTask) error {
 	if err := mw.StatusClient.NotifyAboutNew(task.ID); err != nil {
 		return err
 	}
-	return mw.Next.HandleTask(task)
+	if err := mw.Next.HandleTask(task); err != nil {
+		_ = mw.StatusClient.NotifyAboutNew(task.ID)
+		return err
+	}
+	return nil
 }
