@@ -9,12 +9,17 @@ import (
 )
 
 func CreateFaktoryListenHandler(s service.OptimizationService) worker.Perform {
-	return func(_ worker.Context, args ...interface{}) error {
+	return func(ctx worker.Context, args ...interface{}) error {
 		task, err := decodeTask(args)
 		if err != nil {
+			_ = ctx.Err()
 			return err
 		}
-		return s.HandleTask(task)
+		if err = s.HandleTask(task); err != nil {
+			_ = ctx.Err()
+			return err
+		}
+		return nil
 	}
 }
 

@@ -9,12 +9,15 @@ import (
 )
 
 func CreateFaktoryListenHandler(s service.MostSignificantImageService) worker.Perform {
-	return func(_ worker.Context, args ...interface{}) error {
+	return func(ctx worker.Context, args ...interface{}) error {
 		task, err := decodeMostSignificantImageTask(args)
-
-		_, err = s.ExtractMostSignificantImage(task)
-
 		if err != nil {
+			_ = ctx.Err()
+			return err
+		}
+
+		if _, err = s.ExtractMostSignificantImage(task); err != nil {
+			_ = ctx.Err()
 			return err
 		}
 

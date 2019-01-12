@@ -2,7 +2,6 @@ package transport
 
 import (
 	"bytes"
-	"fmt"
 	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/google/jsonapi"
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/model"
@@ -10,18 +9,19 @@ import (
 )
 
 func CreateFaktoryHandler(cs service.CropService) worker.Perform {
-	return func(_ worker.Context, args ...interface{}) error {
+	return func(ctx worker.Context, args ...interface{}) error {
 		task, err := decodeCropTask(args)
 		if err != nil {
+			_ = ctx.Err()
 			return err
 		}
 
 		if _, err = cs.CropImage(task); err != nil {
-			fmt.Println("error while cropping image", err)
+			_ = ctx.Err()
 			return err
 		}
 
-		return err
+		return nil
 	}
 }
 
