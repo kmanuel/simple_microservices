@@ -5,7 +5,6 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/prometheus/common/log"
 	"net/http"
-	"os"
 )
 
 type taskStatus struct {
@@ -54,8 +53,7 @@ func updateTaskStatus(taskId string, newStatus string) error {
 		return err
 	}
 
-	requestServiceHost := os.Getenv("REQUEST_SERVICE_HOST") + ":" + os.Getenv("REQUEST_SERVICE_PORT")
-	url := requestServiceHost + "/tasks/status/" + taskId
+	url := "http://request_service:8080/tasks/status/" + taskId
 	log.Info("sending update request to ", url)
 	resp, err := http.Post(url, jsonapi.MediaType, buf)
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"github.com/kmanuel/simple_microservices/go_kit/service/request_service/service"
 	"github.com/kmanuel/simple_microservices/go_kit/service/request_service/transport"
 	"net/http"
-	"os"
 )
 
 func main() {
@@ -35,7 +34,6 @@ func main() {
 	)
 	http.Handle("/", changeStatusHandler)
 
-	addr := ":" + os.Getenv("REQUEST_SERVICE_PORT")
-	fmt.Println(http.ListenAndServe(addr, nil))
+	fmt.Println(http.ListenAndServe(":8080", nil))
 
 }

@@ -65,7 +65,7 @@ func initMinio() {
 
 func startPrometheus() {
 	prometheus.MustRegister(requests)
-	var addr = flag.String("listen-address", ":"+os.Getenv("OPTIMIZATION_SERVICE_PROMETHEUS_PORT"), "The address to listen on for HTTP requests.")
+	var addr = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
 	fmt.Println(http.ListenAndServe(*addr, nil))
@@ -85,5 +85,5 @@ func startExternalApi(statusClient status_client.StatusClient, fs service.Faktor
 		transport.EncodeResponse,
 	)
 	http.Handle("/", requestHandler)
-	fmt.Println(http.ListenAndServe(":"+os.Getenv("OPTIMIZATION_SERVICE_EXTERNAL_PORT"), nil))
+	fmt.Println(http.ListenAndServe(":8081", nil))
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
-	"os"
 )
 
 var (
@@ -58,7 +57,7 @@ func startRestApi(sc status_client.StatusClient, s *service.FaktoryService) {
 		transport.EncodeResponse,
 	)
 	http.Handle("/", requestHandler)
-	fmt.Println(http.ListenAndServe(":"+os.Getenv("MOST_SIGNIFICANT_IMAGE_EXTERNAL_PORT"), nil))
+	fmt.Println(http.ListenAndServe(":8080", nil))
 }
 
 func startFaktory(fs service.FaktoryListenService, s service.MostSignificantImageService, sc status_client.StatusClient) {
@@ -69,7 +68,7 @@ func startFaktory(fs service.FaktoryListenService, s service.MostSignificantImag
 
 func startPrometheus() {
 	prometheus.MustRegister(requests)
-	var addr = flag.String("listen-address", ":"+os.Getenv("CROP_SERVICE_PROMETHEUS_PORT"), "The address to listen on for HTTP requests.")
+	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
 	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
 	fmt.Println(http.ListenAndServe(*addr, nil))

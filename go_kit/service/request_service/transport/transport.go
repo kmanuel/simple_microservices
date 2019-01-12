@@ -6,13 +6,16 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/kmanuel/simple_microservices/go_kit/service/request_service/model"
 	"github.com/kmanuel/simple_microservices/go_kit/service/request_service/service"
+	"github.com/prometheus/common/log"
 	"net/http"
 )
 
 func MakeStatusEndpoint(cs service.RequestStatusService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
+		log.Info("Status request received")
 		list, err := cs.GetTaskStatusList()
 		if err != nil {
+			log.Error(err)
 			return nil, err
 		}
 		return &list, nil
@@ -21,6 +24,7 @@ func MakeStatusEndpoint(cs service.RequestStatusService) endpoint.Endpoint {
 
 func MakeStatusChangeEndpoint(cs service.ChangeStatusService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
+		log.Info("Status change request receives")
 		task := request.(*model.TaskStatus)
 		return cs.SaveOrUpdate(task)
 	}

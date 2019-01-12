@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/kmanuel/simple_microservices/go_kit/service/crop/status_client"
+	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/status_client"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/model"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/service"
 )
