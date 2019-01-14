@@ -5,6 +5,7 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/model"
 	"github.com/prometheus/common/log"
+	"github.com/esimov/caire"
 	"os/exec"
 	"strconv"
 )

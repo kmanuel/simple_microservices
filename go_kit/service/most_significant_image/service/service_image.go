@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/advancedlogic/GoOse"
 	"github.com/google/uuid"
+	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/model"
 	"github.com/prometheus/common/log"
 	"io"
@@ -23,7 +24,6 @@ func NewMostSignificantImageService() MostSignificantImageService {
 }
 
 func (mostSignificantImageService) ExtractMostSignificantImage(t *model.MostSignificantImageTask) (outputImagePath string, err error) {
-	log.Info("starting to extract most significant image")
 	g := goose.New()
 	article, err := g.ExtractFromURL(t.Url)
 	if err != nil {
@@ -34,8 +34,14 @@ func (mostSignificantImageService) ExtractMostSignificantImage(t *model.MostSign
 	if err = downloadImage(topImageUrl, filePath); err != nil {
 		return "", err
 	}
-	log.Info("finished extracting most significant image")
-	return filePath, err
+
+	log.Info("uploading file")
+	if _, err = minioconnector.UploadFileWithName(filePath, t.ID); err != nil {
+		log.Info("error while uploading file", err)
+		return "", err
+	}
+
+	return filePath, nil
 }
 
 func downloadImage(url string, outputFile string) error {

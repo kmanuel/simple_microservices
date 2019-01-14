@@ -5,6 +5,7 @@ import (
 	"fmt"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/joho/godotenv"
+	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/middleware"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/service"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/status_client"
@@ -12,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
+	"os"
 )
 
 var (
@@ -31,6 +33,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	initMinio()
 
 	var statusClient status_client.StatusClient
 	statusClient = status_client.NewStatusClient(taskType)
@@ -44,6 +47,14 @@ func main() {
 	go startPrometheus()
 	go startFaktory(faktoryService, imageService, statusClient)
 	startRestApi(statusClient, &faktoryService)
+}
+
+func initMinio() {
+	minioconnector.Init(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
 }
 
 func startRestApi(sc status_client.StatusClient, s *service.FaktoryService) {

@@ -49,12 +49,13 @@ func (cropServiceImpl) CropImage(task *model.CropTask) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = jpeg.Encode(f, croppedImg, nil)
-	if err != nil {
+	if err = jpeg.Encode(f, croppedImg, nil); err != nil {
 		return "", err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFilePath, imageId)
+	if _, err = minioconnector.UploadFileWithName(outputFilePath, imageId); err != nil {
+		return "", err
+	}
 
 	log.Info("finished cropping api_image")
 	return outputFilePath, nil

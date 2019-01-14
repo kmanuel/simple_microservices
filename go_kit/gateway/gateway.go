@@ -54,7 +54,7 @@ func proxyRequestServiceRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func proxyScreenshotRequest(w http.ResponseWriter, r *http.Request) {
-	proxyTo("http://screenshot", w, r)
+	proxyTo("http://screenshot:8080", w, r)
 }
 
 func proxyPortraitRequest(w http.ResponseWriter, r *http.Request) {
