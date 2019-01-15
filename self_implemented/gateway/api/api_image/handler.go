@@ -62,7 +62,6 @@ func (h *ImageHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	jsonapiRuntime := jsonapi.NewRuntime().Instrument("images")
 
 	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "upload"}).Inc()
-	// TODO check header type
 
 	uploadedFileName := uuid.New().String()
 	err := minioconnector.UploadFileStream(r.Body, uploadedFileName)

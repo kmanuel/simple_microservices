@@ -6,6 +6,7 @@ import (
 	"github.com/google/jsonapi"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/model"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/service"
+	"github.com/opentracing/opentracing-go/log"
 )
 
 func CreateFaktoryListenHandler(s service.OptimizationService) worker.Perform {
@@ -16,6 +17,7 @@ func CreateFaktoryListenHandler(s service.OptimizationService) worker.Perform {
 			return err
 		}
 		if err = s.HandleTask(task); err != nil {
+			log.Error(err)
 			_ = ctx.Err()
 			return err
 		}

@@ -1,13 +1,12 @@
 package service
 
 import (
+	"github.com/esimov/caire"
 	"github.com/google/uuid"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/model"
 	"github.com/prometheus/common/log"
-	"github.com/esimov/caire"
-	"os/exec"
-	"strconv"
+	"os"
 )
 
 type OptimizationService interface {
@@ -46,26 +45,58 @@ func extractPortrait(inputLocation string, width int, height int) (string, error
 
 	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
 
-	cmd := exec.Command(
-		"caire",
-		"-in", inputLocation,
-		"-out", outputFilePath,
-		"-width="+strconv.Itoa(width),
-		"-height="+strconv.Itoa(height),
-		"-perc=1",
-		"-square=0",
-		"-scale=1",
-		"-blur=0",
-		"-sobel=0",
-		"-debug=0",
-		"-face=1",
-		"-cc=./data/facefinder",
-	)
-	err := cmd.Run()
+	p := &caire.Processor{
+		BlurRadius:     0,
+		SobelThreshold: 0,
+		NewWidth:       width,
+		NewHeight:      height,
+		Percentage:     true,
+		Square:         false,
+		Debug:          false,
+		Scale:          true,
+		FaceDetect:     true,
+		Classifier:     "./data/facefinder",
+	}
+
+	inFile, err := os.Open(inputLocation)
+	defer inFile.Close()
 	if err != nil {
+		log.Fatalf("Unable to open source file: %v", err)
+	}
+
+	outFile, err := os.OpenFile(outputFilePath, os.O_CREATE|os.O_WRONLY, 0755)
+	defer outFile.Close()
+	if err != nil {
+		log.Fatalf("Unable to open output file: %v", err)
+	}
+
+	if err = p.Process(inFile, outFile); err != nil {
 		return "", err
 	}
 
-	log.Info("extracted portrait")
 	return outputFilePath, nil
+
+
+	//cmd := exec.Command(
+	//	"caire",
+	//	"-in", inputLocation,
+	//	"-out", outputFilePath,
+	//	"-width="+strconv.Itoa(width),
+	//	"-height="+strconv.Itoa(height),
+	//	"-perc=1",
+	//	"-square=0",
+	//	"-scale=1",
+	//	"-blur=0",
+	//	"-sobel=0",
+	//	"-debug=0",
+	//	"-face=1",
+	//	"-cc=./data/facefinder",
+	//)
+	//err := cmd.Run()
+	//if err != nil {
+	//	return "", err
+	//}
+	//
+	//log.Info("extracted portrait")
+	//return outputFilePath, nil
 }
