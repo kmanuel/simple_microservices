@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/update_status"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -53,33 +54,12 @@ func (h *TaskHandler) ServeCropHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.crop.create")
-
-	task := new(CropTask)
-	task.ID = uuid.New().String()
-
-	// unmarshal request body
-	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	log.Info("proxying to crop service")
+	requestServiceUrl, e := url.Parse("http://crop:8080")
+	if e != nil {
+		panic(e)
 	}
-	buf := new(bytes.Buffer)
-	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err := h.publishTask("crop", buf.String(), task.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// send response to caller
-	w.WriteHeader(http.StatusCreated)
-	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
 }
 
 func (h *TaskHandler) ServeScreenshotHTTP(w http.ResponseWriter, r *http.Request) {
@@ -250,22 +230,9 @@ func (h *TaskHandler) createPortraitTask(w http.ResponseWriter, r *http.Request)
 func (h *TaskHandler) publishTask(queue string, taskJson string, id string) error {
 	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "create_task"}).Inc()
 
-	if err := updateStatus(queue, id); err != nil {
+	if err := update_status.NotifyAboutNewTask(id, queue); err != nil {
 		return err
 	}
 
 	return publishToFaktory(queue, taskJson)
-}
-
-func updateStatus(queue string, taskId string) error {
-	taskStatus := &TaskStatus{
-		TaskID: taskId,
-		TaskType: queue,
-	}
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, taskStatus); err != nil {
-		return err
-	}
-	_, err := http.Post("http://request_service:8080/tasks", jsonapi.MediaType, buf)
-	return err
 }
