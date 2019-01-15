@@ -5,6 +5,7 @@ import (
 	"flag"
 	faktory "github.com/contribsys/faktory/client"
 	worker "github.com/contribsys/faktory_worker_go"
+	"github.com/esimov/caire"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -15,8 +16,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
-	"os/exec"
-	"strconv"
 )
 
 type Task struct {
@@ -128,25 +127,35 @@ func ExtractPortrait(
 
 	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
 
-	cmd := exec.Command(
-		"caire",
-		"-in", inputLocation,
-		"-out", outputFilePath,
-		"-width="+strconv.Itoa(width),
-		"-height="+strconv.Itoa(height),
-		"-perc=1",
-		"-square=0",
-		"-scale=1",
-		"-blur=0",
-		"-sobel=0",
-		"-debug=0",
-		"-face=1",
-		"-cc=./data/facefinder",
-	)
-	err := cmd.Run()
+	p := &caire.Processor{
+		BlurRadius:     0,
+		SobelThreshold: 0,
+		NewWidth:       width,
+		NewHeight:      height,
+		Percentage:     true,
+		Square:         false,
+		Debug:          false,
+		Scale:          true,
+		FaceDetect:     true,
+		Classifier:     "./data/facefinder",
+	}
+
+	inFile, err := os.Open(inputLocation)
+	defer inFile.Close()
 	if err != nil {
+		log.Fatalf("Unable to open source file: %v", err)
+	}
+
+	outFile, err := os.OpenFile(outputFilePath, os.O_CREATE|os.O_WRONLY, 0755)
+	defer outFile.Close()
+	if err != nil {
+		log.Fatalf("Unable to open output file: %v", err)
+	}
+
+	if err = p.Process(inFile, outFile); err != nil {
 		return "", err
 	}
+
 
 	log.Info("extracted portrait")
 	return outputFilePath, nil
