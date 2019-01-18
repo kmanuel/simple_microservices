@@ -1,4 +1,4 @@
 .idea
 test/
 
-crop_service/crop_service
+./**/app
