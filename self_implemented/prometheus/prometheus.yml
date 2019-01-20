@@ -2,23 +2,23 @@ scrape_configs:
   - job_name: 'crop_service'
     scrape_interval: 5s
     static_configs:
-      - targets: ['crop:8080']
+      - targets: ['crop:8081']
   - job_name: 'most_significant_image_service'
     scrape_interval: 5s
     static_configs:
-      - targets: ['most_significant_image:8080']
+      - targets: ['most_significant_image:8081']
   - job_name: 'optimization_service'
     scrape_interval: 5s
     static_configs:
-      - targets: ['optimization:8080']
+      - targets: ['optimization:8081']
   - job_name: 'portrait_service'
     scrape_interval: 5s
     static_configs:
-      - targets: ['portrait:8080']
+      - targets: ['portrait:8081']
   - job_name: 'screenshot_service'
     scrape_interval: 5s
     static_configs:
-      - targets: ['screenshot:8080']
+      - targets: ['screenshot:8081']
   - job_name: 'request_service'
     scrape_interval: 5s
     static_configs:

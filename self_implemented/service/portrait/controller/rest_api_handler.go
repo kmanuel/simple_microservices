@@ -10,7 +10,7 @@ import (
 )
 
 type TaskHandler interface {
-	ServeHttp(w http.ResponseWriter, r *http.Request)
+	PerformTask(w http.ResponseWriter, r *http.Request)
 }
 
 type taskHandlerImpl struct {
@@ -27,20 +27,7 @@ func NewTaskHandler(faktoryPublishService service.FaktoryPublishService, statusS
 	}
 }
 
-func (h taskHandlerImpl) ServeHttp(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodPost:
-		methodHandler = h.handleIncomingTask
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
-func (h taskHandlerImpl) handleIncomingTask(w http.ResponseWriter, r *http.Request) {
+func (h taskHandlerImpl) PerformTask(w http.ResponseWriter, r *http.Request) {
 	task := new(model.Task)
 	task.ID = uuid.New().String()
 	err := jsonapi.UnmarshalPayload(r.Body, task)

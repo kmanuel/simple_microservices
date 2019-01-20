@@ -58,23 +58,23 @@ func registerPendingGauge(typeName string) {
 }
 
 func startRestApi() {
-	myRouter := mux.NewRouter().StrictSlash(false)
+	router := mux.NewRouter().StrictSlash(false)
 
 	taskHandler := &api.TaskHandler{RequestCounter: requests}
 
-	myRouter.
+	router.
 		Path("/tasks").
 		Methods(http.MethodGet).
 		HandlerFunc(taskHandler.GetTasks)
-	myRouter.
+	router.
 		Path("/tasks").
 		Methods(http.MethodPost).
 		HandlerFunc(taskHandler.CreateTask)
 
-	myRouter.
+	router.
 		Path("/tasks/status/{id}").
 		Methods(http.MethodPost).
 		HandlerFunc(taskHandler.UpdateTask)
 
-	log.Fatal(http.ListenAndServe(":8080", myRouter))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

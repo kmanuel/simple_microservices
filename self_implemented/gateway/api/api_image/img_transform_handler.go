@@ -13,25 +13,11 @@ type NewTaskType struct {
 }
 
 type ImageTaskHandler struct{
-	RequestCounter *prometheus.CounterVec
+	DispatchCounter *prometheus.CounterVec
 }
-
-func (h *ImageTaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodGet:
-		methodHandler = h.HandleGetTasks
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
 
 func (h *ImageTaskHandler) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
-	h.RequestCounter.With(prometheus.Labels{"controller":"gateway", "type": "get_tasks"}).Inc()
+	h.DispatchCounter.With(prometheus.Labels{"type": "get_tasks"}).Inc()
 	log.Info("received request for all tasks")
 
 	requestServiceUrl, e := url.Parse("http://request_service:8080")

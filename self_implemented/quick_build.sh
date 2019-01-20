@@ -4,5 +4,5 @@ go build -ldflags "-linkmode external -extldflags -static" -o service/most_signi
 go build -ldflags "-linkmode external -extldflags -static" -o service/optimization/app service/optimization/main.go
 go build -ldflags "-linkmode external -extldflags -static" -o service/portrait/app service/portrait/main.go
 go build -ldflags "-linkmode external -extldflags -static" -o service/screenshot/app service/screenshot/main.go
-go build -ldflags "-linkmode external -extldflags -static" -o service/gateway/app service/gateway/main.go
+go build -ldflags "-linkmode external -extldflags -static" -o gateway/app gateway/main.go
 go build -ldflags "-linkmode external -extldflags -static" -o service/request_service/app service/request_service/main.go

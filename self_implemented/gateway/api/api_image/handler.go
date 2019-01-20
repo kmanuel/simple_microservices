@@ -12,23 +12,10 @@ import (
 )
 
 type ImageHandler struct{
-	RequestCounter *prometheus.CounterVec
+	DispatchCounter *prometheus.CounterVec
 }
 
-func (h *ImageHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodGet:
-		methodHandler = h.downloadImage
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
-func (h *ImageHandler) downloadImage(w http.ResponseWriter, r *http.Request) {
+func (h *ImageHandler) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	log.Info("download api_image request")
 	imageId := mux.Vars(r)["id"]
 
@@ -45,23 +32,8 @@ func (h *ImageHandler) downloadImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *ImageHandler) ServeUploadHTTP(w http.ResponseWriter, r *http.Request) {
-	var methodHandler http.HandlerFunc
-	switch r.Method {
-	case http.MethodPost:
-		methodHandler = h.uploadImage
-	default:
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
-	}
-
-	methodHandler(w, r)
-}
-
-func (h *ImageHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("images")
-
-	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "upload"}).Inc()
+func (h *ImageHandler) UploadImage(w http.ResponseWriter, r *http.Request) {
+	h.DispatchCounter.With(prometheus.Labels{"type": "upload"}).Inc()
 
 	uploadedFileName := uuid.New().String()
 	err := minioconnector.UploadFileStream(r.Body, uploadedFileName)
@@ -73,7 +45,7 @@ func (h *ImageHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(201)
 	newImage := &Image{ID: uploadedFileName}
-	if err := jsonapiRuntime.MarshalPayload(w, newImage); err != nil {
+	if err := jsonapi.MarshalPayload(w, newImage); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

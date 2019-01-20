@@ -62,8 +62,8 @@ func startRestApi() {
 	var taskHandler handler.TaskHandler
 	taskHandler = handler.NewTaskHandler(taskService, statusService, taskType)
 
-	myRouter := mux.NewRouter().StrictSlash(false)
-	myRouter.HandleFunc("/" + taskType, taskHandler.ServeHttp)
+	router := mux.NewRouter().StrictSlash(false)
+	router.HandleFunc("/" + taskType, taskHandler.PerformTask).Methods(http.MethodPost)
 
-	log.Fatal(http.ListenAndServe(":8080", myRouter))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
