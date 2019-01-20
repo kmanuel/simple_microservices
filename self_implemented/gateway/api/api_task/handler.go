@@ -1,10 +1,6 @@
 package api_task
 
 import (
-	"bytes"
-	"github.com/google/jsonapi"
-	"github.com/google/uuid"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/update_status"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -32,12 +28,7 @@ func (h *TaskHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
 	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "get_tasks"}).Inc()
 	log.Info("received request for all tasks")
-
-	requestServiceUrl, e := url.Parse("http://request_service:8080")
-	if e != nil {
-		panic(e)
-	}
-	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
+	proxyTo("http://request_service:8080", w, r)
 }
 
 func (h *TaskHandler) ServeCropHTTP(w http.ResponseWriter, r *http.Request) {
@@ -55,11 +46,7 @@ func (h *TaskHandler) ServeCropHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *TaskHandler) createCropTask(w http.ResponseWriter, r *http.Request) {
 	log.Info("proxying to crop service")
-	requestServiceUrl, e := url.Parse("http://crop:8080")
-	if e != nil {
-		panic(e)
-	}
-	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
+	proxyTo("http://crop:8080", w, r)
 }
 
 func (h *TaskHandler) ServeScreenshotHTTP(w http.ResponseWriter, r *http.Request) {
@@ -76,32 +63,8 @@ func (h *TaskHandler) ServeScreenshotHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func (h *TaskHandler) createScreenshotTask(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.screenshot.create")
-
-	task := new(ScreenShotTask)
-	// unmarshal request body
-	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	task.ID = uuid.New().String()
-	buf := new(bytes.Buffer)
-	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err := h.publishTask("screenshot", buf.String(), task.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// send response to caller
-	w.WriteHeader(http.StatusCreated)
-	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	log.Info("proxying to screenshot service")
+	proxyTo("http://screenshot:8080", w, r)
 }
 
 func (h *TaskHandler) ServeMostSignificantHTTP(w http.ResponseWriter, r *http.Request) {
@@ -118,31 +81,8 @@ func (h *TaskHandler) ServeMostSignificantHTTP(w http.ResponseWriter, r *http.Re
 }
 
 func (h *TaskHandler) createMostSignificantTask(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.significant.create")
-
-	task := new(MostSignificantImageTask)
-	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	task.ID = uuid.New().String()
-	buf := new(bytes.Buffer)
-	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err := h.publishTask("most_significant_image", buf.String(), task.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// send response to caller
-	w.WriteHeader(http.StatusCreated)
-	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	log.Info("proxying to most_significant_image service")
+	proxyTo("http://most_significant_image:8080", w, r)
 }
 
 func (h *TaskHandler) ServeOptimizationHTTP(w http.ResponseWriter, r *http.Request) {
@@ -159,32 +99,8 @@ func (h *TaskHandler) ServeOptimizationHTTP(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *TaskHandler) createOptimizationTask(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.optimization.create")
-
-	task := new(OptimizationTask)
-	// unmarshal request body
-	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	task.ID = uuid.New().String()
-	buf := new(bytes.Buffer)
-	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err := h.publishTask("optimization", buf.String(), task.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// send response to caller
-	w.WriteHeader(http.StatusCreated)
-	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	log.Info("proxying to optimization service")
+	proxyTo("http://optimization:8080", w, r)
 }
 
 func (h *TaskHandler) ServePortraitHTTP(w http.ResponseWriter, r *http.Request) {
@@ -201,38 +117,14 @@ func (h *TaskHandler) ServePortraitHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *TaskHandler) createPortraitTask(w http.ResponseWriter, r *http.Request) {
-	jsonapiRuntime := jsonapi.NewRuntime().Instrument("tasks.portrait.create")
-
-	task := new(PortraitTask)
-	if err := jsonapiRuntime.UnmarshalPayload(r.Body, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	task.ID = uuid.New().String()
-	buf := new(bytes.Buffer)
-	if err := jsonapiRuntime.MarshalPayload(buf, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	err := h.publishTask("portrait", buf.String(), task.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	if err := jsonapiRuntime.MarshalPayload(w, task); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	log.Info("proxying to portrait service")
+	proxyTo("http://portrait:8080", w, r)
 }
 
-func (h *TaskHandler) publishTask(queue string, taskJson string, id string) error {
-	h.RequestCounter.With(prometheus.Labels{"controller": "gateway", "type": "create_task"}).Inc()
-
-	if err := update_status.NotifyAboutNewTask(id, queue); err != nil {
-		return err
+func proxyTo(proxyTargetHost string, w http.ResponseWriter, r *http.Request) {
+	requestServiceUrl, e := url.Parse(proxyTargetHost)
+	if e != nil {
+		panic(e)
 	}
-
-	return publishToFaktory(queue, taskJson)
+	httputil.NewSingleHostReverseProxy(requestServiceUrl).ServeHTTP(w, r)
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_faktory"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_image"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_root"
+	. "github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_root"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_task"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -62,7 +62,7 @@ func startPrometheus() {
 func startJsonRestApi() {
 	myRouter := mux.NewRouter().StrictSlash(false)
 
-	rootHandler := &api_root.RootHandler{}
+	rootHandler := &RootHandler{}
 	imageHandler := &api_image.ImageHandler{RequestCounter: requests}
 	taskHandler := &api_task.TaskHandler{RequestCounter: requests}
 	faktoryHandler := &api_faktory.FaktoryHandler{RequestCounter: requests}
@@ -73,11 +73,11 @@ func startJsonRestApi() {
 	myRouter.HandleFunc("/images/{id}", imageHandler.ServeDownload)
 	myRouter.HandleFunc("/images/{id}/tasks", imageTransformationHandler.ServeHTTP)
 	myRouter.HandleFunc("/tasks", taskHandler.ServeHTTP)
-	myRouter.HandleFunc("/tasks/screenshots", taskHandler.ServeScreenshotHTTP)
-	myRouter.HandleFunc("/tasks/crops", taskHandler.ServeCropHTTP)
-	myRouter.HandleFunc("/tasks/most-significant-images", taskHandler.ServeMostSignificantHTTP)
-	myRouter.HandleFunc("/tasks/optimizations", taskHandler.ServeOptimizationHTTP)
-	myRouter.HandleFunc("/tasks/portraits", taskHandler.ServePortraitHTTP)
+	myRouter.HandleFunc("/screenshot", taskHandler.ServeScreenshotHTTP)
+	myRouter.HandleFunc("/crop", taskHandler.ServeCropHTTP)
+	myRouter.HandleFunc("/most_significant_image", taskHandler.ServeMostSignificantHTTP)
+	myRouter.HandleFunc("/optimization", taskHandler.ServeOptimizationHTTP)
+	myRouter.HandleFunc("/portrait", taskHandler.ServePortraitHTTP)
 	myRouter.HandleFunc("/faktory/info", faktoryHandler.ServeHTTP)
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
