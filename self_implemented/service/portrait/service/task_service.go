@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/portrait/model"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"os"
 )
@@ -14,13 +15,17 @@ type TaskService interface {
 }
 
 type taskService struct {
+	counter *prometheus.CounterVec
+	taskType string
 }
 
-func NewTaskService() TaskService {
-	return taskService{}
+func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
+	return taskService{counter, taskType}
 }
 
-func (taskService) Handle(t *model.Task) error {
+func (h taskService) Handle(t *model.Task) error {
+	h.counter.With(prometheus.Labels{"type": h.taskType}).Inc()
+
 
 	downloadedFilePath, err := minioconnector.DownloadFile(t.ImageId)
 	if err != nil {

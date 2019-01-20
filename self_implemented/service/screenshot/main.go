@@ -19,10 +19,10 @@ const taskType = "screenshot"
 var (
 	requests = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "request_count",
-			Help: "Number of requests handled from faktory.",
+			Name: "request_handle_count",
+			Help: "Number of handled requests.",
 		},
-		[]string{"controller", "status"},
+		[]string{"type"},
 	)
 )
 
@@ -57,7 +57,7 @@ func startRestApi() {
 	statusService = service.NewTaskStatusService()
 
 	var taskService service.TaskService
-	taskService = service.NewTaskService()
+	taskService = service.NewTaskService(requests, taskType)
 
 	var taskHandler handler.TaskHandler
 	taskHandler = handler.NewTaskHandler(taskService, statusService, taskType)

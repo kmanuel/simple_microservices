@@ -6,6 +6,7 @@ import (
 	"github.com/kmanuel/simple_microservices/self_implemented/service/crop/model"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"image"
 	"image/jpeg"
@@ -17,14 +18,18 @@ type TaskService interface {
 }
 
 type taskService struct {
+	counter *prometheus.CounterVec
+	taskType string
 }
 
-func NewTaskService() TaskService {
-	return taskService{}
+func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
+	return taskService{counter, taskType}
 }
 
 func (h taskService) Handle(t *model.Task) error {
-	downloadedFilePath, err := downloadFile(t.ImageId)
+	h.counter.With(prometheus.Labels{"type": h.taskType}).Inc()
+
+	downloadedFilePath, err := minioconnector.DownloadFile(t.ImageId)
 	if err != nil {
 		return err
 	}
@@ -34,10 +39,6 @@ func (h taskService) Handle(t *model.Task) error {
 	}
 	_, err = minioconnector.UploadFileWithName(croppedFilePath, t.ID)
 	return err
-}
-
-func downloadFile(objectName string) (string, error) {
-	return minioconnector.DownloadFile(objectName)
 }
 
 func cropImage(inputImg string, width int, height int) (string, error) {

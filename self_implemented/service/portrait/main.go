@@ -20,10 +20,10 @@ var taskType = "portrait"
 var (
 	requests = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "request_count",
-			Help: "Number of requests handled from faktory.",
+			Name: "request_handle_count",
+			Help: "Number of handled requests.",
 		},
-		[]string{"controller", "status"},
+		[]string{"type"},
 	)
 )
 
@@ -34,7 +34,7 @@ func main() {
 	taskStatusService = service.NewTaskStatusService()
 
 	var taskService service.TaskService
-	taskService = service.NewTaskService()
+	taskService = service.NewTaskService(requests, taskType)
 
 	go startPrometheus()
 	go startFaktoryListener(taskStatusService, taskService)

@@ -6,6 +6,7 @@ import (
 	"github.com/kmanuel/simple_microservices/self_implemented/service/optimization/model"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"image"
 	"image/jpeg"
@@ -17,13 +18,17 @@ type TaskService interface {
 }
 
 type taskService struct {
+	counter *prometheus.CounterVec
+	taskType string
 }
 
-func NewTaskService() TaskService {
-	return taskService{}
+func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
+	return taskService{counter, taskType}
 }
 
 func (h taskService) Handle(t *model.Task) error {
+	h.counter.With(prometheus.Labels{"type": h.taskType}).Inc()
+
 	downloadedFilePath, err := minioconnector.DownloadFile(t.ImageId)
 	if err != nil {
 		return err

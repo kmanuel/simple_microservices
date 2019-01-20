@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/screenshot/model"
+	"github.com/prometheus/client_golang/prometheus"
 	"os/exec"
 )
 
@@ -12,13 +13,17 @@ type TaskService interface {
 }
 
 type taskService struct {
+	counter *prometheus.CounterVec
+	taskType string
 }
 
-func NewTaskService() TaskService {
-	return taskService{}
+func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
+	return taskService{counter, taskType}
 }
 
 func (h taskService) Handle(t *model.Task) error {
+	h.counter.With(prometheus.Labels{"type": h.taskType}).Inc()
+
 	outputFilePath, err := takeScreenShot(t.Url)
 	if err != nil {
 		return err
