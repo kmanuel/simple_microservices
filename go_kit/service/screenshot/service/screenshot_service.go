@@ -7,18 +7,18 @@ import (
 	"os/exec"
 )
 
-type ScreenshotService interface {
-	HandleTask(*model.ScreenshotTask) error
+type ImageService interface {
+	HandleTask(*model.Task) error
 }
 
-type screenshotTaskImpl struct {
+type screenshotServiceImpl struct {
 }
 
-func NewScreenshotService() ScreenshotService {
-	return screenshotTaskImpl{}
+func NewScreenshotService() ImageService {
+	return screenshotServiceImpl{}
 }
 
-func (screenshotTaskImpl) HandleTask(task *model.ScreenshotTask) error {
+func (screenshotServiceImpl) HandleTask(task *model.Task) error {
 	chromeUserAgent := "Mozilla/5.0 (Windows NT 6.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36"
 	phantomJSBin := "./lib/bin/phantomjs"
 	jsPath := "./lib/js/screenshot.js"

@@ -12,32 +12,20 @@ var (
 			Name: "request_count",
 			Help: "Number of requests handled from faktory.",
 		},
-		[]string{"controller", "status"},
+		[]string{"type"},
 	)
 )
 
-type PrometheusPublishTaskMiddleware struct {
-	Next    service.FaktoryPublishService
+type prometheusMiddleware struct {
+	next     service.ImageService
+	taskType string
 }
 
-func (mw PrometheusPublishTaskMiddleware) PublishTask(task *model.ScreenshotTask) error  {
-	requests.With(prometheus.Labels{"controller": "screenshot", "status": "fetched"}).Inc()
-	err := mw.Next.PublishTask(task)
-	if err != nil {
-		requests.With(prometheus.Labels{"controller": "screenshot", "status": "failed"}).Inc()
-	}
-	return err
+func NewPrometheusMiddleware(next service.ImageService, taskType string) service.ImageService {
+	return prometheusMiddleware{next: next, taskType: taskType}
 }
 
-type PrometheusProcessTaskMiddleware struct {
-	Next	service.ScreenshotService
-}
-
-func (mw PrometheusProcessTaskMiddleware) HandleTask(task *model.ScreenshotTask) error {
-	requests.With(prometheus.Labels{"controller": "screenshot", "status": "processing"}).Inc()
-	err := mw.Next.HandleTask(task)
-	if err != nil {
-		requests.With(prometheus.Labels{"controller": "screenshot", "status": "failed"}).Inc()
-	}
-	return err
+func (mw prometheusMiddleware) HandleTask(task *model.Task) error {
+	requests.With(prometheus.Labels{"type": mw.taskType}).Inc()
+	return mw.next.HandleTask(task)
 }

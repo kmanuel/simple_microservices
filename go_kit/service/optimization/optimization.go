@@ -8,7 +8,6 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/optimization/middleware"
 	"github.com/kmanuel/simple_microservices/go_kit/service/optimization/service"
-	"github.com/kmanuel/simple_microservices/go_kit/service/optimization/status_client"
 	"github.com/kmanuel/simple_microservices/go_kit/service/optimization/transport"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -35,24 +34,15 @@ func main() {
 	}
 	initMinio()
 
-	var statusClient status_client.StatusClient
-	statusClient = status_client.NewStatusClient(taskType)
+	var statusClient service.StatusClient
+	statusClient = service.NewStatusClient()
 
-	var optimizationService service.OptimizationService
-	optimizationService = service.NewOptimizationService()
-
-	var faktoryService service.FaktoryService
-	faktoryService = service.NewFaktoryService(taskType)
+	var imageService service.ImageService
+	imageService = service.NewOptimizationService()
 
 	go startPrometheus()
-
-	var faktoryListenService service.FaktoryListenService
-	faktoryListenService = faktoryService
-	go startFaktory(faktoryListenService, optimizationService, statusClient)
-
-	startExternalApi(statusClient, faktoryService)
+	startRestApi(statusClient, imageService)
 }
-
 
 func initMinio() {
 	minioconnector.Init(
@@ -62,28 +52,23 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
+func startRestApi(statusClient service.StatusClient, imageService service.ImageService) {
+	imageService = middleware.NewPrometheusMiddleware(imageService, taskType)
+	imageService = middleware.NewRequestStatusMiddleware(statusClient, imageService)
 
-func startPrometheus() {
-	prometheus.MustRegister(requests)
-	var addr = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
-	flag.Parse()
-	http.Handle("/metrics", promhttp.Handler())
-	fmt.Println(http.ListenAndServe(*addr, nil))
-}
-
-func startFaktory(fs service.FaktoryListenService, optimizationService service.OptimizationService, statusClient status_client.StatusClient) {
-	optimizationService = middleware.StatusPerformMiddleware{StatusClient: statusClient, Next: optimizationService}
-	optimizationService = middleware.PrometheusProcessTaskMiddleware{Next: optimizationService}
-	fs.Handle(taskType, transport.CreateFaktoryListenHandler(optimizationService))
-}
-func startExternalApi(statusClient status_client.StatusClient, fs service.FaktoryPublishService) {
-	fs = middleware.PrometheusPublishTaskMiddleware{Next: fs}
-	fs = middleware.StatusRequestMiddleware{StatusClient: statusClient, Next: fs}
 	requestHandler := httptransport.NewServer(
-		transport.CreateRestHandler(fs),
-		transport.DecodeScreenshotTask,
+		transport.CreateRestHandler(imageService),
+		transport.DecodeRequest,
 		transport.EncodeResponse,
 	)
 	http.Handle("/", requestHandler)
-	fmt.Println(http.ListenAndServe(":8081", nil))
+	fmt.Println(http.ListenAndServe(":8080", nil))
+}
+
+func startPrometheus() {
+	prometheus.MustRegister(requests)
+	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
+	flag.Parse()
+	http.Handle("/metrics", promhttp.Handler())
+	fmt.Println(http.ListenAndServe(*addr, nil))
 }

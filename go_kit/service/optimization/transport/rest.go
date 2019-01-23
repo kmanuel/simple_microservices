@@ -10,11 +10,13 @@ import (
 	"net/http"
 )
 
-func CreateRestHandler(s service.FaktoryPublishService) endpoint.Endpoint {
+func CreateRestHandler(s service.ImageService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
-		task := request.(*model.OptimizationTask)
+		task := request.(*model.Task)
 		task.ID = uuid.New().String()
-		err := s.PublishTask(task)
+
+		err := s.HandleTask(task)
+
 		if err != nil {
 			return nil, err
 		}
@@ -22,8 +24,8 @@ func CreateRestHandler(s service.FaktoryPublishService) endpoint.Endpoint {
 	}
 }
 
-func DecodeScreenshotTask(_ context.Context, r *http.Request) (interface{}, error) {
-	task := new(model.OptimizationTask)
+func DecodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	task := new(model.Task)
 	if err := jsonapi.UnmarshalPayload(r.Body, task); err != nil {
 		return nil, err
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/middleware"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/service"
-	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/status_client"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/transport"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -33,24 +32,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	initMinio()
 
-	var statusClient status_client.StatusClient
-	statusClient = status_client.NewStatusClient(taskType)
+	var statusClient service.StatusClient
+	statusClient = service.NewStatusClient()
 
-	var optimizationService service.OptimizationService
+	var optimizationService service.ImageService
 	optimizationService = service.NewOptimizationService()
 
 	var faktoryService service.FaktoryService
 	faktoryService = service.NewFaktoryService(taskType)
 
-	go startPrometheus()
-
 	var faktoryListenService service.FaktoryListenService
 	faktoryListenService = faktoryService
-	go startFaktory(faktoryListenService, optimizationService, statusClient)
 
-	startExternalApi(statusClient, faktoryService)
+	go startPrometheus()
+	go startFaktory(faktoryListenService, optimizationService, statusClient)
+	startExternalApi(faktoryService)
 }
 
 
@@ -71,14 +70,12 @@ func startPrometheus() {
 	fmt.Println(http.ListenAndServe(*addr, nil))
 }
 
-func startFaktory(fs service.FaktoryListenService, optimizationService service.OptimizationService, statusClient status_client.StatusClient) {
-	optimizationService = middleware.StatusPerformMiddleware{StatusClient: statusClient, Next: optimizationService}
-	optimizationService = middleware.PrometheusProcessTaskMiddleware{Next: optimizationService}
+func startFaktory(fs service.FaktoryListenService, optimizationService service.ImageService, statusClient service.StatusClient) {
+	optimizationService = middleware.NewPrometheusMiddleware(optimizationService, taskType)
+	optimizationService = middleware.NewRequestStatusMiddleware(statusClient, optimizationService)
 	fs.Handle(taskType, transport.CreateFaktoryListenHandler(optimizationService))
 }
-func startExternalApi(statusClient status_client.StatusClient, fs service.FaktoryPublishService) {
-	fs = middleware.PrometheusPublishTaskMiddleware{Next: fs}
-	fs = middleware.StatusRequestMiddleware{StatusClient: statusClient, Next: fs}
+func startExternalApi(fs service.FaktoryPublishService) {
 	requestHandler := httptransport.NewServer(
 		transport.CreateRestHandler(fs),
 		transport.DecodeScreenshotTask,

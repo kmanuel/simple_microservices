@@ -13,35 +13,35 @@ import (
 
 const outputImageLocation = "/tmp/"
 
-type MostSignificantImageService interface {
-	ExtractMostSignificantImage(*model.MostSignificantImageTask) (outputImagePath string, err error)
+type ImageService interface {
+	HandleTask(*model.Task) error
 }
 
 type mostSignificantImageService struct{}
 
-func NewMostSignificantImageService() MostSignificantImageService {
+func NewMostSignificantImageService() ImageService {
 	return mostSignificantImageService{}
 }
 
-func (mostSignificantImageService) ExtractMostSignificantImage(t *model.MostSignificantImageTask) (outputImagePath string, err error) {
+func (mostSignificantImageService) HandleTask(t *model.Task) error {
 	g := goose.New()
 	article, err := g.ExtractFromURL(t.Url)
 	if err != nil {
-		return "", err
+		return err
 	}
 	filePath := outputImageLocation + uuid.New().String()
 	topImageUrl := article.TopImage
 	if err = downloadImage(topImageUrl, filePath); err != nil {
-		return "", err
+		return err
 	}
 
 	log.Info("uploading file")
 	if _, err = minioconnector.UploadFileWithName(filePath, t.ID); err != nil {
 		log.Info("error while uploading file", err)
-		return "", err
+		return err
 	}
 
-	return filePath, nil
+	return nil
 }
 
 func downloadImage(url string, outputFile string) error {

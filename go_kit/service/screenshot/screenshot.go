@@ -8,7 +8,6 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/screenshot/middleware"
 	"github.com/kmanuel/simple_microservices/go_kit/service/screenshot/service"
-	"github.com/kmanuel/simple_microservices/go_kit/service/screenshot/status_client"
 	"github.com/kmanuel/simple_microservices/go_kit/service/screenshot/transport"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -35,24 +34,15 @@ func main() {
 	}
 	initMinio()
 
-	var statusClient status_client.StatusClient
-	statusClient = status_client.NewStatusClient(taskType)
+	var statusClient service.StatusClient
+	statusClient = service.NewStatusClient()
 
-	var screenshotService service.ScreenshotService
-	screenshotService = service.NewScreenshotService()
-
-	var faktoryService service.FaktoryService
-	faktoryService = service.NewFaktoryService(taskType)
+	var imageService service.ImageService
+	imageService = service.NewScreenshotService()
 
 	go startPrometheus()
-
-	var faktoryListenService service.FaktoryListenService
-	faktoryListenService = faktoryService
-	go startFaktory(faktoryListenService, screenshotService, statusClient)
-
-	startExternalApi(statusClient, faktoryService)
+	startRestApi(statusClient, imageService)
 }
-
 
 func initMinio() {
 	minioconnector.Init(
@@ -62,6 +52,18 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
+func startRestApi(statusClient service.StatusClient, imageService service.ImageService) {
+	imageService = middleware.NewPrometheusMiddleware(imageService, taskType)
+	imageService = middleware.NewRequestStatusMiddleware(statusClient, imageService)
+
+	requestHandler := httptransport.NewServer(
+		transport.CreateRestHandler(imageService),
+		transport.DecodeRequest,
+		transport.EncodeResponse,
+	)
+	http.Handle("/", requestHandler)
+	fmt.Println(http.ListenAndServe(":8080", nil))
+}
 
 func startPrometheus() {
 	prometheus.MustRegister(requests)
@@ -69,21 +71,4 @@ func startPrometheus() {
 	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
 	fmt.Println(http.ListenAndServe(*addr, nil))
-}
-
-func startFaktory(fs service.FaktoryListenService, screenshotService service.ScreenshotService, statusClient status_client.StatusClient) {
-	screenshotService = middleware.StatusPerformMiddleware{StatusClient: statusClient, Next: screenshotService}
-	screenshotService = middleware.PrometheusProcessTaskMiddleware{Next: screenshotService}
-	fs.Handle(taskType, transport.CreateFaktoryListenHandler(screenshotService))
-}
-func startExternalApi(statusClient status_client.StatusClient, fs service.FaktoryPublishService) {
-	fs = middleware.PrometheusPublishTaskMiddleware{Next: fs}
-	fs = middleware.StatusRequestMiddleware{StatusClient: statusClient, Next: fs}
-	requestHandler := httptransport.NewServer(
-		transport.CreateRestHandler(fs),
-		transport.DecodeScreenshotTask,
-		transport.EncodeResponse,
-	)
-	http.Handle("/", requestHandler)
-	fmt.Println(http.ListenAndServe(":8080", nil))
 }

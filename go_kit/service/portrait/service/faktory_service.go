@@ -11,7 +11,7 @@ import (
 )
 
 type FaktoryPublishService interface {
-	PublishTask(task *model.PortraitTask) error
+	PublishTask(task *model.Task) error
 }
 
 type FaktoryListenService interface{
@@ -19,7 +19,7 @@ type FaktoryListenService interface{
 }
 
 type FaktoryService interface {
-	PublishTask(task *model.PortraitTask) error
+	PublishTask(task *model.Task) error
 	Handle(queue string, fn worker.Perform)
 }
 
@@ -31,7 +31,7 @@ type faktoryServiceImpl struct {
 	TaskType string
 }
 
-func (fs faktoryServiceImpl) PublishTask(task *model.PortraitTask) error {
+func (fs faktoryServiceImpl) PublishTask(task *model.Task) error {
 	buf := new(bytes.Buffer)
 	if err := jsonapi.MarshalPayload(buf, task); err != nil {
 		return err

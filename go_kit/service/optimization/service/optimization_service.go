@@ -12,18 +12,18 @@ import (
 	"os"
 )
 
-type OptimizationService interface {
-	HandleTask(*model.OptimizationTask) error
+type ImageService interface {
+	HandleTask(*model.Task) error
 }
 
 type optimizationServiceImpl struct {
 }
 
-func NewOptimizationService() OptimizationService {
+func NewOptimizationService() ImageService {
 	return optimizationServiceImpl{}
 }
 
-func (optimizationServiceImpl) HandleTask(task *model.OptimizationTask) error {
+func (optimizationServiceImpl) HandleTask(task *model.Task) error {
 	downloadedFilePath, err := minioconnector.DownloadFile(task.ImageId)
 	if err != nil {
 		return err

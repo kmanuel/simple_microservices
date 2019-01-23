@@ -9,7 +9,7 @@ import (
 	"github.com/opentracing/opentracing-go/log"
 )
 
-func CreateFaktoryListenHandler(s service.OptimizationService) worker.Perform {
+func CreateFaktoryListenHandler(s service.ImageService) worker.Perform {
 	return func(ctx worker.Context, args ...interface{}) error {
 		task, err := decodeTask(args)
 		if err != nil {
@@ -25,8 +25,8 @@ func CreateFaktoryListenHandler(s service.OptimizationService) worker.Perform {
 	}
 }
 
-func decodeTask(args []interface{}) (*model.PortraitTask, error) {
-	task := new(model.PortraitTask)
+func decodeTask(args []interface{}) (*model.Task, error) {
+	task := new(model.Task)
 	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
 	if err != nil {
 		return nil, err

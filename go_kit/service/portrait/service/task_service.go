@@ -9,18 +9,18 @@ import (
 	"os"
 )
 
-type OptimizationService interface {
-	HandleTask(*model.PortraitTask) error
+type ImageService interface {
+	HandleTask(*model.Task) error
 }
 
 type optimizationServiceImpl struct {
 }
 
-func NewOptimizationService() OptimizationService {
+func NewOptimizationService() ImageService {
 	return optimizationServiceImpl{}
 }
 
-func (optimizationServiceImpl) HandleTask(task *model.PortraitTask) error {
+func (optimizationServiceImpl) HandleTask(task *model.Task) error {
 	downloadedFilePath, err := minioconnector.DownloadFile(task.ImageId)
 	if err != nil {
 		return err
@@ -73,6 +73,8 @@ func extractPortrait(inputLocation string, width int, height int) (string, error
 	if err = p.Process(inFile, outFile); err != nil {
 		return "", err
 	}
+
+	log.Info("extracted portrait")
 
 	return outputFilePath, nil
 }

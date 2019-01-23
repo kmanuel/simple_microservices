@@ -8,7 +8,6 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/middleware"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/service"
-	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/status_client"
 	"github.com/kmanuel/simple_microservices/go_kit/service/most_significant_image/transport"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -35,18 +34,14 @@ func main() {
 	}
 	initMinio()
 
-	var statusClient status_client.StatusClient
-	statusClient = status_client.NewStatusClient(taskType)
+	var statusClient service.StatusClient
+	statusClient = service.NewStatusClient()
 
-	var faktoryService service.FaktoryService
-	faktoryService = service.NewFaktoryService(taskType)
-
-	var imageService service.MostSignificantImageService
+	var imageService service.ImageService
 	imageService = service.NewMostSignificantImageService()
 
 	go startPrometheus()
-	go startFaktory(faktoryService, imageService, statusClient)
-	startRestApi(statusClient, &faktoryService)
+	startRestApi(statusClient, imageService)
 }
 
 func initMinio() {
@@ -57,24 +52,17 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
-func startRestApi(sc status_client.StatusClient, s *service.FaktoryService) {
-	var publishService service.FaktoryPublishService
-	publishService = middleware.StatusRequestMiddleware{StatusClient: sc, Next: publishService}
-	publishService = middleware.PrometheusPublishTaskMiddleware{Next: *s}
+func startRestApi(statusClient service.StatusClient, imageService service.ImageService) {
+	imageService = middleware.NewPrometheusMiddleware(imageService, taskType)
+	imageService = middleware.NewRequestStatusMiddleware(statusClient, imageService)
 
 	requestHandler := httptransport.NewServer(
-		transport.CreateRestHandler(*s),
-		transport.DecodeMostSignificantImageTask,
+		transport.CreateRestHandler(imageService),
+		transport.DecodeRequest,
 		transport.EncodeResponse,
 	)
 	http.Handle("/", requestHandler)
 	fmt.Println(http.ListenAndServe(":8080", nil))
-}
-
-func startFaktory(fs service.FaktoryListenService, s service.MostSignificantImageService, sc status_client.StatusClient) {
-	s = middleware.StatusPerformMiddleware{StatusClient: sc, Next: s}
-	s = middleware.PrometheusProcessTaskMiddleware{Next: s}
-	fs.Handle(taskType, transport.CreateFaktoryListenHandler(s))
 }
 
 func startPrometheus() {

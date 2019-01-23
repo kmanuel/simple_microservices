@@ -8,7 +8,6 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/middleware"
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/service"
-	"github.com/kmanuel/simple_microservices/go_kit/service/crop/status_client"
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/transport"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -26,6 +25,8 @@ var (
 	)
 )
 
+var taskType = "crop"
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -33,18 +34,14 @@ func main() {
 	}
 	initMinio()
 
-	var cropService service.CropService
+	var cropService service.ImageService
 	cropService = service.NewCropService()
 
-	var statusClient status_client.StatusClient
-	statusClient = status_client.NewStatusClient()
-
-	var faktoryService service.FaktoryService
-	faktoryService = service.NewFaktoryService(cropService)
+	var statusClient service.StatusClient
+	statusClient = service.NewStatusClient()
 
 	go startPrometheus()
-	go startFaktory(faktoryService, cropService, statusClient)
-	startExternalApi(statusClient, faktoryService)
+	startExternalApi(cropService, statusClient)
 }
 
 func initMinio() {
@@ -55,18 +52,13 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
-func startFaktory(fs service.FaktoryListenService, cropService service.CropService, statusClient status_client.StatusClient) {
-	cropService = middleware.StatusCropMiddleware{StatusClient: statusClient, Next: cropService}
-	handler := transport.CreateFaktoryHandler(cropService)
-	fs.Handle("crop", handler)
-}
+func startExternalApi(imageService service.ImageService, statusClient service.StatusClient) {
+	imageService = middleware.NewPrometheusMiddleware(imageService, taskType)
+	imageService = middleware.NewRequestStatusMiddleware(statusClient, imageService)
 
-func startExternalApi(statusClient status_client.StatusClient, fs service.FaktoryPublishService) {
-	fs = middleware.PrometheusPublishTaskMiddleware{Next: fs}
-	fs = middleware.RequestStatusMiddleware{StatusClient: statusClient, Next: fs}
 	requestHandler := httptransport.NewServer(
-		transport.MakeCropRequestHandler(fs),
-		transport.DecodeCropTask,
+		transport.MakeTaskHandler(imageService),
+		transport.DecodeRequest,
 		transport.EncodeResponse,
 	)
 	http.Handle("/", requestHandler)

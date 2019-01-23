@@ -1,6 +1,6 @@
 package model
 
-type CropTask struct {
+type Task struct {
 	ID      string `jsonapi:"primary,crop_task"`
 	ImageId string `jsonapi:"attr,image_id"`
 	Width   int    `jsonapi:"attr,width"`

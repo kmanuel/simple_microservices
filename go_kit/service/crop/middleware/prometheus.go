@@ -9,35 +9,23 @@ import (
 var (
 	requests = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "request_count",
-			Help: "Number of requests handled from faktory.",
+			Name: "request_handle_count",
+			Help: "Number of handled requests.",
 		},
-		[]string{"controller", "status"},
+		[]string{"type"},
 	)
 )
 
-type PrometheusPublishTaskMiddleware struct {
-	Next    service.FaktoryPublishService
+type prometheusMiddleware struct {
+	next     service.ImageService
+	taskType string
 }
 
-func (mw PrometheusPublishTaskMiddleware) PublishTask(task *model.CropTask) error  {
-	requests.With(prometheus.Labels{"controller": "crop", "status": "fetched"}).Inc()
-	err := mw.Next.PublishTask(task)
-	if err != nil {
-		requests.With(prometheus.Labels{"controller": "crop", "status": "failed"}).Inc()
-	}
-	return err
+func NewPrometheusMiddleware(next service.ImageService, taskType string) service.ImageService {
+	return prometheusMiddleware{next: next, taskType: taskType}
 }
 
-type PrometheusProcessTaskMiddleware struct {
-	Next	service.CropService
-}
-
-func (mw PrometheusProcessTaskMiddleware) CropImage(task *model.CropTask) (string, error) {
-	requests.With(prometheus.Labels{"controller": "crop", "status": "processing"}).Inc()
-	res, err := mw.Next.CropImage(task)
-	if err != nil {
-		requests.With(prometheus.Labels{"controller": "crop", "status": "failed"}).Inc()
-	}
-	return res, err
+func (mw prometheusMiddleware) HandleTask(task *model.Task) error {
+	requests.With(prometheus.Labels{"type": mw.taskType}).Inc()
+	return mw.next.HandleTask(task)
 }

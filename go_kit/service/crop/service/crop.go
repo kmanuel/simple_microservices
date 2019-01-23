@@ -12,24 +12,24 @@ import (
 	"os"
 )
 
-type CropService interface {
-	CropImage(task *model.CropTask) (string, error)
+type ImageService interface {
+	HandleTask(task *model.Task) error
 }
 
-func NewCropService() CropService {
+func NewCropService() ImageService {
 	return cropServiceImpl{}
 }
 
 type cropServiceImpl struct{}
 
-func (cropServiceImpl) CropImage(task *model.CropTask) (string, error) {
+func (cropServiceImpl) HandleTask(task *model.Task) error {
 	imageId := task.ImageId
 	width := task.Width
 	height := task.Height
 
 	inputImg, err := downloadFile(imageId)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	log.Info("starting to crop api_image")
@@ -47,18 +47,18 @@ func (cropServiceImpl) CropImage(task *model.CropTask) (string, error) {
 	f, err = os.Create(outputFilePath)
 	defer f.Close()
 	if err != nil {
-		return "", err
+		return err
 	}
 	if err = jpeg.Encode(f, croppedImg, nil); err != nil {
-		return "", err
+		return err
 	}
 
-	if _, err = minioconnector.UploadFileWithName(outputFilePath, imageId); err != nil {
-		return "", err
+	if _, err = minioconnector.UploadFileWithName(outputFilePath, task.ID); err != nil {
+		return err
 	}
 
 	log.Info("finished cropping api_image")
-	return outputFilePath, nil
+	return nil
 }
 
 func downloadFile(objectName string) (string, error) {

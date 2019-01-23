@@ -10,11 +10,11 @@ import (
 	"net/http"
 )
 
-func MakeCropRequestHandler(faktoryService service.FaktoryPublishService) endpoint.Endpoint {
+func MakeTaskHandler(imageService service.ImageService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
-		task := request.(*model.CropTask)
+		task := request.(*model.Task)
 		task.ID = uuid.New().String()
-		err := faktoryService.PublishTask(task)
+		err := imageService.HandleTask(task)
 		if err != nil {
 			return nil, err
 		}
@@ -22,8 +22,8 @@ func MakeCropRequestHandler(faktoryService service.FaktoryPublishService) endpoi
 	}
 }
 
-func DecodeCropTask(_ context.Context, r *http.Request) (interface{}, error) {
-	task := new(model.CropTask)
+func DecodeRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	task := new(model.Task)
 	if err := jsonapi.UnmarshalPayload(r.Body, task); err != nil {
 		return nil, err
 	}

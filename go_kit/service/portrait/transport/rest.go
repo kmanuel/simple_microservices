@@ -12,7 +12,7 @@ import (
 
 func CreateRestHandler(s service.FaktoryPublishService) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
-		task := request.(*model.PortraitTask)
+		task := request.(*model.Task)
 		task.ID = uuid.New().String()
 		err := s.PublishTask(task)
 		if err != nil {
@@ -23,7 +23,7 @@ func CreateRestHandler(s service.FaktoryPublishService) endpoint.Endpoint {
 }
 
 func DecodeScreenshotTask(_ context.Context, r *http.Request) (interface{}, error) {
-	task := new(model.PortraitTask)
+	task := new(model.Task)
 	if err := jsonapi.UnmarshalPayload(r.Body, task); err != nil {
 		return nil, err
 	}

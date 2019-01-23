@@ -3,17 +3,32 @@ package middleware
 import (
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/model"
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/service"
-	"github.com/kmanuel/simple_microservices/go_kit/service/crop/status_client"
 )
 
 type RequestStatusMiddleware struct {
-	StatusClient status_client.StatusClient
-	Next         service.FaktoryPublishService
+	statusClient service.StatusClient
+	next         service.ImageService
 }
 
-func (mw RequestStatusMiddleware) PublishTask(task *model.CropTask) error  {
-	if err := mw.StatusClient.NotifyAboutNew(task.ID); err != nil {
+func NewRequestStatusMiddleware(statusClient service.StatusClient, next service.ImageService) service.ImageService {
+	return RequestStatusMiddleware{statusClient: statusClient, next: next}
+}
+
+func (mw RequestStatusMiddleware) HandleTask(task *model.Task) error {
+	if err := mw.statusClient.NotifyAboutProcessing(task.ID); err != nil {
 		return err
 	}
-	return mw.Next.PublishTask(task)
+
+	err := mw.next.HandleTask(task)
+
+	if err != nil {
+		if err := mw.statusClient.NotifyAboutFailure(task.ID); err != nil {
+			return err
+		}
+		return err
+	}
+	if err := mw.statusClient.NotifyAboutCompletion(task.ID); err != nil {
+		return err
+	}
+	return nil
 }
