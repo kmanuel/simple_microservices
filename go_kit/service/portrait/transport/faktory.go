@@ -21,6 +21,7 @@ func CreateFaktoryListenHandler(s service.ImageService) worker.Perform {
 			_ = ctx.Err()
 			return err
 		}
+		ctx.Done()
 		return nil
 	}
 }

@@ -77,6 +77,10 @@ services:
       - "prometheus"
       - "request_service"
     deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
       restart_policy:
         condition: on-failure
 
@@ -90,6 +94,10 @@ services:
       - "prometheus"
       - "request_service"
     deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
       restart_policy:
         condition: on-failure
 
@@ -103,6 +111,10 @@ services:
       - "prometheus"
       - "request_service"
     deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
       restart_policy:
         condition: on-failure
 
@@ -117,6 +129,10 @@ services:
       - "prometheus"
       - "request_service"
     deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
       restart_policy:
         condition: on-failure
 
@@ -130,6 +146,10 @@ services:
       - "prometheus"
       - "request_service"
     deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
       restart_policy:
         condition: on-failure
 
@@ -143,5 +163,9 @@ services:
       - "prometheus"
       - "request_service"
     deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
       restart_policy:
         condition: on-failure

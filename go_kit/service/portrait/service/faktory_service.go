@@ -54,6 +54,7 @@ func (fs faktoryServiceImpl) PublishTask(task *model.Task) error {
 func (fs faktoryServiceImpl) Handle(queue string, fn worker.Perform) {
 	fmt.Println("starting faktory")
 	mgr := worker.NewManager()
+	mgr.Concurrency = 1
 	mgr.Register(queue, fn)
 	mgr.Queues = []string{queue}
 	var quit bool

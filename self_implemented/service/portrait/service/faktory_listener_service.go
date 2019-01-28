@@ -27,6 +27,7 @@ func NewFactoryListenerService(taskStatusService TaskStatusService, taskService 
 
 func (s faktoryListenerService) Start() error {
 	mgr := worker.NewManager()
+	mgr.Concurrency = 1
 	mgr.Register(s.taskType, s.handleTask)
 	mgr.Queues = []string{s.taskType}
 	var quit bool

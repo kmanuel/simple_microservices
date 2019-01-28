@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/esimov/caire"
 	"github.com/google/uuid"
+	"github.com/kmanuel/caire"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/portrait/model"
 	"github.com/prometheus/client_golang/prometheus"

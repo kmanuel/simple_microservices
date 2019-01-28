@@ -1,8 +1,7 @@
 package service
 
 import (
-	"github.com/esimov/caire"
-	"github.com/google/uuid"
+	"github.com/kmanuel/caire"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/model"
 	"github.com/prometheus/common/log"
@@ -26,7 +25,7 @@ func (optimizationServiceImpl) HandleTask(task *model.Task) error {
 		return err
 	}
 
-	outputFilePath, err := extractPortrait(downloadedFilePath, task.Width, task.Height)
+	outputFilePath, err := extractPortrait(task.ID, downloadedFilePath, task.Width, task.Height)
 	if err != nil {
 		return err
 	}
@@ -39,13 +38,13 @@ func (optimizationServiceImpl) HandleTask(task *model.Task) error {
 	return nil
 }
 
-func extractPortrait(inputLocation string, width int, height int) (string, error) {
+func extractPortrait(taskId string, inputLocation string, width int, height int) (string, error) {
 
 	log.Info("extracting portrait")
 
-	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
+	outputFilePath := "/tmp/" + taskId + ".jpg"
 
-	p := &caire.Processor{
+	p := caire.Processor{
 		BlurRadius:     0,
 		SobelThreshold: 0,
 		NewWidth:       width,
@@ -62,15 +61,19 @@ func extractPortrait(inputLocation string, width int, height int) (string, error
 	defer inFile.Close()
 	if err != nil {
 		log.Fatalf("Unable to open source file: %v", err)
+		return "", err
 	}
 
 	outFile, err := os.OpenFile(outputFilePath, os.O_CREATE|os.O_WRONLY, 0755)
 	defer outFile.Close()
 	if err != nil {
 		log.Fatalf("Unable to open output file: %v", err)
+		return "", err
 	}
 
+	log.Info("processing file")
 	if err = p.Process(inFile, outFile); err != nil {
+		log.Error("foo")
 		return "", err
 	}
 
