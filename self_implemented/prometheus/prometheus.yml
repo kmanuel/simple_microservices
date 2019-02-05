@@ -1,34 +1,58 @@
 scrape_configs:
   - job_name: 'crop_service'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['crop:8081']
+    dns_sd_configs:
+      - names:
+          - 'tasks.crop'
+        type: 'A'
+        port: 8081
   - job_name: 'most_significant_image_service'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['most_significant_image:8081']
+    dns_sd_configs:
+      - names:
+          - 'tasks.most_significant_image_service'
+        type: 'A'
+        port: 8081
   - job_name: 'optimization_service'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['optimization:8081']
+    dns_sd_configs:
+      - names:
+          - 'tasks.optimization_service'
+        type: 'A'
+        port: 8081
   - job_name: 'portrait_service'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['portrait:8081']
+    dns_sd_configs:
+      - names:
+          - 'tasks.portrait_service'
+        type: 'A'
+        port: 8081
   - job_name: 'screenshot_service'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['screenshot:8081']
+    dns_sd_configs:
+      - names:
+          - 'tasks.screenshot_service'
+        type: 'A'
+        port: 8081
   - job_name: 'request_service'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['request_service:8081']
+    dns_sd_configs:
+      - names:
+          - 'tasks.request_service'
+        type: 'A'
+        port: 8081
   - job_name: 'gateway'
     scrape_interval: 5s
-    static_configs:
-      - targets: ['gateway:8081']
-  - job_name: minio
+    dns_sd_configs:
+      - names:
+          - 'tasks.gateway'
+        type: 'A'
+        port: 8081
+  - job_name: 'minio'
     metrics_path: /minio/prometheus/metrics
-    static_configs:
-      - targets: ['minio:9000']
+    dns_sd_configs:
+      - names:
+          - 'tasks.minio'
+        type: 'A'
+        port: 8081
 

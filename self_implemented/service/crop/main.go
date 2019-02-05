@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
@@ -33,6 +34,12 @@ func main() {
 }
 
 func initMinio() {
+	hystrix.ConfigureCommand("update_task_status", hystrix.CommandConfig{
+		Timeout:               60000,
+		MaxConcurrentRequests: 100,
+		ErrorPercentThreshold: 25,
+	})
+
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)

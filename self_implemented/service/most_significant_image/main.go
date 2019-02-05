@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
@@ -27,6 +28,12 @@ var (
 )
 
 func main() {
+	hystrix.ConfigureCommand("update_task_status", hystrix.CommandConfig{
+		Timeout:               0,
+		MaxConcurrentRequests: 100,
+		ErrorPercentThreshold: 25,
+	})
+
 	initMinio()
 	go startPrometheus()
 	startRestApi()
@@ -63,7 +70,7 @@ func startRestApi() {
 	taskHandler = handler.NewTaskHandler(taskService, statusService, taskType)
 
 	router := mux.NewRouter().StrictSlash(false)
-	router.HandleFunc("/" + taskType, taskHandler.PerformTask).Methods(http.MethodPost)
+	router.HandleFunc("/"+taskType, taskHandler.PerformTask).Methods(http.MethodPost)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

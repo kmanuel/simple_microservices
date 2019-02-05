@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/google/jsonapi"
 	"github.com/prometheus/common/log"
 	"net/http"
@@ -57,18 +58,19 @@ func (taskStatusServiceImpl) NotifyAboutCompletion(taskId string) error {
 }
 
 func updateTask(taskId string, newStatus string) error {
-	taskStatus := &TaskStatus{
-		TaskID:   taskId,
-		Status:   newStatus,
-	}
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, taskStatus); err != nil {
+	return hystrix.Do("update_task_status", func() error {
+		taskStatus := &TaskStatus{
+			TaskID: taskId,
+			Status: newStatus,
+		}
+		buf := new(bytes.Buffer)
+		if err := jsonapi.MarshalPayload(buf, taskStatus); err != nil {
+			return err
+		}
+
+		url := "http://request_service:8080/tasks/status/" + taskId
+		log.Info("sending update request to ", url)
+		_, err := http.Post(url, jsonapi.MediaType, buf)
 		return err
-	}
-
-	url := "http://request_service:8080/tasks/status/" + taskId
-	log.Info("sending update request to ", url)
-	_, err := http.Post(url, jsonapi.MediaType, buf)
-	return err
+	}, nil)
 }
-

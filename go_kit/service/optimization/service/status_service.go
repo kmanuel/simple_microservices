@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/google/jsonapi"
 	"github.com/prometheus/common/log"
 	"net/http"
@@ -38,21 +39,24 @@ func (statusClientImpl) NotifyAboutFailure(taskId string) error {
 }
 
 func updateTaskStatus(taskId string, newStatus string) error {
-	taskStatus := &taskStatus{
-		TaskID:   taskId,
-		Status:   newStatus,
-	}
-	buf := new(bytes.Buffer)
-	if err := jsonapi.MarshalPayload(buf, taskStatus); err != nil {
-		return err
-	}
+	return hystrix.Do("update_task_status", func() error {
+		taskStatus := &taskStatus{
+			TaskID:   taskId,
+			Status:   newStatus,
+		}
+		buf := new(bytes.Buffer)
+		if err := jsonapi.MarshalPayload(buf, taskStatus); err != nil {
+			return err
+		}
 
-	url := "http://request_service:8080/tasks/status/" + taskId
-	log.Info("sending update request to ", url)
-	resp, err := http.Post(url, jsonapi.MediaType, buf)
-	if err != nil {
-		log.Error("failed to post new taskStatus", err)
-	}
-	log.Info("response=", resp)
-	return err
+		url := "http://request_service:8080/tasks/status/" + taskId
+		log.Info("sending update request to ", url)
+		resp, err := http.Post(url, jsonapi.MediaType, buf)
+		if err != nil {
+			log.Error("failed to post new taskStatus", err)
+		}
+		log.Info("response=", resp)
+		return err
+	}, nil)
+
 }

@@ -79,7 +79,7 @@ services:
     deploy:
       resources:
         limits:
-          cpu: '0.1'
+          cpus: '0.1'
           memory: 100M
       restart_policy:
         condition: on-failure
@@ -96,7 +96,7 @@ services:
     deploy:
       resources:
         limits:
-          cpu: '0.1'
+          cpus: '0.1'
           memory: 100M
       restart_policy:
         condition: on-failure
@@ -113,7 +113,7 @@ services:
     deploy:
       resources:
         limits:
-          cpu: '0.1'
+          cpus: '0.1'
           memory: 100M
       restart_policy:
         condition: on-failure
@@ -131,7 +131,7 @@ services:
     deploy:
       resources:
         limits:
-          cpu: '0.1'
+          cpus: '0.1'
           memory: 100M
       restart_policy:
         condition: on-failure
@@ -148,7 +148,7 @@ services:
     deploy:
       resources:
         limits:
-          cpu: '0.1'
+          cpus: '0.1'
           memory: 100M
       restart_policy:
         condition: on-failure
@@ -165,7 +165,7 @@ services:
     deploy:
       resources:
         limits:
-          cpu: '0.1'
+          cpus: '0.1'
           memory: 100M
       restart_policy:
         condition: on-failure
