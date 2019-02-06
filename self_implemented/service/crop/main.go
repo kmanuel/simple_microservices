@@ -30,6 +30,7 @@ var (
 func main() {
 	initMinio()
 	go startPrometheus()
+	go startFaktoryListener()
 	startRestApi()
 }
 
@@ -73,4 +74,19 @@ func startRestApi() {
 	router.HandleFunc("/" + taskType, taskHandler.PerformTask).Methods(http.MethodPost)
 
 	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+func startFaktoryListener() {
+	var statusService service.TaskStatusService
+	statusService = service.NewTaskStatusService()
+
+	var taskService service.TaskService
+	taskService = service.NewTaskService(requests, taskType)
+
+	faktoryService := service.NewFaktoryListenerService(statusService, taskService, taskType)
+
+	err := faktoryService.Start()
+	if err != nil {
+		panic(err)
+	}
 }

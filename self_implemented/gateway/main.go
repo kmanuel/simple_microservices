@@ -76,11 +76,11 @@ func startJsonRestApi() {
 	myRouter.HandleFunc("/images/{id}", imageHandler.DownloadImage).Methods("GET")
 	myRouter.HandleFunc("/images/{id}/tasks", imageTransformationHandler.HandleGetTasks).Methods("GET")
 	myRouter.HandleFunc("/tasks", proxyHandler.ProxyToRequestService)
-	myRouter.HandleFunc("/screenshot", proxyHandler.ProxyToScreenshotService)
-	myRouter.HandleFunc("/crop", proxyHandler.ProxyToCropService)
-	myRouter.HandleFunc("/most_significant_image", proxyHandler.ProxyToMostSignificantImageService)
-	myRouter.HandleFunc("/optimization", proxyHandler.ProxyToOptimizationService)
-	myRouter.HandleFunc("/portrait", proxyHandler.ProxyToPortraitService)
+	myRouter.HandleFunc("/screenshot", proxyHandler.CreateScreenshotTask)
+	myRouter.HandleFunc("/crop", proxyHandler.CreateCropTask)
+	myRouter.HandleFunc("/most_significant_image", proxyHandler.CreateMostSignificantImageTask)
+	myRouter.HandleFunc("/optimization", proxyHandler.CreateOptimizationTask)
+	myRouter.HandleFunc("/portrait", proxyHandler.CreatePortraitTask)
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }
