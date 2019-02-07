@@ -63,6 +63,35 @@ func startPrometheus() {
 func startJsonRestApi() {
 	log.Debug("starting REST API")
 
+
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+	log.Info("UPDATED")
+
 	rootHandler := &RootHandler{}
 	imageHandler := &api_image.ImageHandler{DispatchCounter: dispatchCounter}
 	proxyHandler := &api_task.ProxyHandler{DispatchCounter: dispatchCounter}
@@ -81,6 +110,7 @@ func startJsonRestApi() {
 	myRouter.HandleFunc("/most_significant_image", proxyHandler.CreateMostSignificantImageTask)
 	myRouter.HandleFunc("/optimization", proxyHandler.CreateOptimizationTask)
 	myRouter.HandleFunc("/portrait", proxyHandler.CreatePortraitTask)
+	myRouter.HandleFunc("/info", proxyHandler.GetFaktoryInfo)
 
 	log.Fatal(http.ListenAndServe(":8080", myRouter))
 }

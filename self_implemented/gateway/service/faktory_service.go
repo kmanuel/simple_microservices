@@ -7,6 +7,7 @@ import (
 
 type FaktoryService interface {
 	PublishToFaktory(taskType string, jsonTask string) error
+	Info() (map[string]interface{}, error)
 }
 
 type faktoryServiceImpl struct {}
@@ -47,3 +48,11 @@ func (faktoryServiceImpl) PublishToFaktory(taskType string, jsonTask string) err
 	return err
 }
 
+func (faktoryServiceImpl) Info() (map[string]interface{}, error) {
+	client, err := faktory.Open()
+	if err != nil {
+		panic(err)
+	}
+
+	return client.Info()
+}

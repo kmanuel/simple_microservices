@@ -15,10 +15,52 @@ import (
 
 type ProxyHandler struct {
 	DispatchCounter *prometheus.CounterVec
+	FaktoryClient *service.FaktoryService
+}
+
+func (h *ProxyHandler) GetFaktoryInfo(w http.ResponseWriter, r *http.Request) {
+	log.Info("getting faktory info")
+	faktoryService := service.NewFaktoryService()
+
+	info, err := faktoryService.Info()
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	faktoryInfo := toFaktoryInfo(info)
+
+
+	log.Info("got info=", faktoryInfo)
+
+	err = jsonapi.MarshalPayload(w, faktoryInfo)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+}
+
+func toFaktoryInfo(info map[string]interface{}) *FaktoryInfo {
+	faktoryPart := info["faktory"].(map[string]interface{})
+
+	queues := make(map[string]float64)
+
+	for k, v := range faktoryPart["queues"].(map[string]interface{}) {
+		queues[k] = v.(float64)
+	}
+
+
+	return &FaktoryInfo{
+		TotalProcessed: faktoryPart["total_processed"].(float64),
+		TotalQueues: faktoryPart["total_queues"].(float64),
+		TotalEnqueued: faktoryPart["total_enqueued"].(float64),
+		TotalFailures: faktoryPart["total_failures"].(float64),
+		Queues: queues,
+	}
 }
 
 func (h *ProxyHandler) ProxyToRequestService(w http.ResponseWriter, r *http.Request) {
-
 	log.Info("received request for all tasks")
 	h.DispatchCounter.With(prometheus.Labels{"type": "request_service"}).Inc()
 	proxyTo("http://request_service:8080", w, r)
