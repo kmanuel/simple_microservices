@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/crop/middleware"
@@ -33,15 +32,8 @@ func main() {
 		panic(err)
 	}
 	initMinio()
-
-	var cropService service.ImageService
-	cropService = service.NewCropService()
-
-	var statusClient service.StatusClient
-	statusClient = service.NewStatusClient()
-
 	go startPrometheus()
-	startExternalApi(cropService, statusClient)
+	startFaktory()
 }
 
 func initMinio() {
@@ -52,17 +44,14 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
-func startExternalApi(imageService service.ImageService, statusClient service.StatusClient) {
-	imageService = middleware.NewPrometheusMiddleware(imageService, taskType)
-	imageService = middleware.NewRequestStatusMiddleware(statusClient, imageService)
+func startFaktory() {
+	fs := service.NewFaktoryService(taskType)
+	cropService := service.NewCropService()
+	statusClient := service.NewStatusClient()
 
-	requestHandler := httptransport.NewServer(
-		transport.MakeTaskHandler(imageService),
-		transport.DecodeRequest,
-		transport.EncodeResponse,
-	)
-	http.Handle("/", requestHandler)
-	fmt.Println(http.ListenAndServe(":8080", nil))
+	cropService = middleware.NewPrometheusMiddleware(cropService, taskType)
+	cropService = middleware.NewRequestStatusMiddleware(statusClient, cropService)
+	fs.Handle(taskType, transport.CreateFaktoryListenHandler(cropService))
 }
 
 func startPrometheus() {

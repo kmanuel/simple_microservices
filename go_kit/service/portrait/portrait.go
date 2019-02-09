@@ -75,6 +75,7 @@ func startFaktory(fs service.FaktoryListenService, optimizationService service.I
 	optimizationService = middleware.NewRequestStatusMiddleware(statusClient, optimizationService)
 	fs.Handle(taskType, transport.CreateFaktoryListenHandler(optimizationService))
 }
+
 func startExternalApi(fs service.FaktoryPublishService) {
 	requestHandler := httptransport.NewServer(
 		transport.CreateRestHandler(fs),
