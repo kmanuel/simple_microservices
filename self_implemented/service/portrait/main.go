@@ -2,10 +2,9 @@ package main
 
 import (
 	"flag"
-	"github.com/gorilla/mux"
+	"github.com/afex/hystrix-go/hystrix"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
-	"github.com/kmanuel/simple_microservices/self_implemented/service/portrait/controller"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/portrait/service"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,19 +28,17 @@ var (
 
 func main() {
 	initMinio()
-
-	var taskStatusService service.TaskStatusService
-	taskStatusService = service.NewTaskStatusService()
-
-	var taskService service.TaskService
-	taskService = service.NewTaskService(requests, taskType)
-
 	go startPrometheus()
-	go startFaktoryListener(taskStatusService, taskService)
-	startRestApi(taskStatusService)
+	startFaktoryListener()
 }
 
 func initMinio() {
+	hystrix.ConfigureCommand("update_task_status", hystrix.CommandConfig{
+		Timeout:               60000,
+		MaxConcurrentRequests: 100,
+		ErrorPercentThreshold: 25,
+	})
+
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
@@ -61,19 +58,17 @@ func startPrometheus() {
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
-func startFaktoryListener(taskStatusService service.TaskStatusService, taskService service.TaskService) {
-	service.NewFactoryListenerService(taskStatusService, taskService, taskType)
-}
+func startFaktoryListener() {
+	var statusService service.TaskStatusService
+	statusService = service.NewTaskStatusService()
 
-func startRestApi(taskStatusService service.TaskStatusService) {
-	var faktoryPublishService service.FaktoryPublishService
-	faktoryPublishService = service.NewFaktoryPublishService(taskType)
+	var taskService service.TaskService
+	taskService = service.NewTaskService(requests, taskType)
 
-	var taskHandler handler.TaskHandler
-	taskHandler = handler.NewTaskHandler(faktoryPublishService, taskStatusService, taskType)
+	faktoryService := service.NewFaktoryListenerService(statusService, taskService, taskType)
 
-	router := mux.NewRouter().StrictSlash(false)
-	router.HandleFunc("/" + taskType, taskHandler.PerformTask).Methods(http.MethodPost)
-
-	log.Fatal(http.ListenAndServe(":8080", router))
+	err := faktoryService.Start()
+	if err != nil {
+		panic(err)
+	}
 }

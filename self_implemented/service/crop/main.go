@@ -3,10 +3,8 @@ package main
 import (
 	"flag"
 	"github.com/afex/hystrix-go/hystrix"
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
-	"github.com/kmanuel/simple_microservices/self_implemented/service/crop/controller"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/crop/service"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,8 +28,7 @@ var (
 func main() {
 	initMinio()
 	go startPrometheus()
-	go startFaktoryListener()
-	startRestApi()
+	startFaktoryListener()
 }
 
 func initMinio() {
@@ -58,22 +55,6 @@ func startPrometheus() {
 	flag.Parse()
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*addr, nil))
-}
-
-func startRestApi() {
-	var statusService service.TaskStatusService
-	statusService = service.NewTaskStatusService()
-
-	var taskService service.TaskService
-	taskService = service.NewTaskService(requests, taskType)
-
-	var taskHandler handler.TaskHandler
-	taskHandler = handler.NewTaskHandler(taskService, statusService, taskType)
-
-	router := mux.NewRouter().StrictSlash(false)
-	router.HandleFunc("/" + taskType, taskHandler.PerformTask).Methods(http.MethodPost)
-
-	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func startFaktoryListener() {

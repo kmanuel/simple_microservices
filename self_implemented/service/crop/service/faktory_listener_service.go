@@ -35,7 +35,6 @@ func (s faktoryListenerService) Start() error {
 		quit = true
 	})
 
-	// Start processing jobs, this method does not return
 	mgr.Run()
 
 	return nil

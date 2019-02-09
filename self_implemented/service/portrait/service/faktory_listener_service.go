@@ -17,7 +17,7 @@ type faktoryListenerService struct {
 	taskType string
 }
 
-func NewFactoryListenerService(taskStatusService TaskStatusService, taskService TaskService, taskType string) FaktoryListenerService {
+func NewFaktoryListenerService(taskStatusService TaskStatusService, taskService TaskService, taskType string) FaktoryListenerService {
 	return faktoryListenerService{
 		taskService: taskService,
 		taskStatusService: taskStatusService,
@@ -35,7 +35,6 @@ func (s faktoryListenerService) Start() error {
 		quit = true
 	})
 
-	// Start processing jobs, this method does not return
 	mgr.Run()
 
 	return nil

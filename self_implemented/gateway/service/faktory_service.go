@@ -2,12 +2,13 @@ package service
 
 import (
 	faktory "github.com/contribsys/faktory/client"
+	"github.com/kmanuel/simple_microservices/self_implemented/gateway/model"
 	"github.com/prometheus/common/log"
 )
 
 type FaktoryService interface {
 	PublishToFaktory(taskType string, jsonTask string) error
-	Info() (map[string]interface{}, error)
+	Info() (*model.FaktoryInfo, error)
 }
 
 type faktoryServiceImpl struct {}
@@ -15,23 +16,6 @@ type faktoryServiceImpl struct {}
 func NewFaktoryService() FaktoryService {
 	return faktoryServiceImpl{}
 }
-
-//func (s faktoryServiceImpl) Publish(t *model.Task) error {
-//	t.ID = uuid.New().String()
-//	buf := new(bytes.Buffer)
-//
-//	err := jsonapi.MarshalPayload(buf, t)
-//	if err != nil {
-//		return err
-//	}
-//
-//	err = s.publishToFaktory(s.taskType, buf.String())
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
 
 func (faktoryServiceImpl) PublishToFaktory(taskType string, jsonTask string) error {
 	log.Info("publish to faktory")
@@ -48,11 +32,31 @@ func (faktoryServiceImpl) PublishToFaktory(taskType string, jsonTask string) err
 	return err
 }
 
-func (faktoryServiceImpl) Info() (map[string]interface{}, error) {
+func (faktoryServiceImpl) Info() (*model.FaktoryInfo, error) {
 	client, err := faktory.Open()
 	if err != nil {
 		panic(err)
 	}
 
-	return client.Info()
+	info, err := client.Info()
+
+	return toFaktoryInfo(info), nil
+}
+
+func toFaktoryInfo(info map[string]interface{}) *model.FaktoryInfo {
+	faktoryPart := info["faktory"].(map[string]interface{})
+
+	queues := make(map[string]float64)
+
+	for k, v := range faktoryPart["queues"].(map[string]interface{}) {
+		queues[k] = v.(float64)
+	}
+
+	return &model.FaktoryInfo{
+		TotalProcessed: faktoryPart["total_processed"].(float64),
+		TotalQueues:    faktoryPart["total_queues"].(float64),
+		TotalEnqueued:  faktoryPart["total_enqueued"].(float64),
+		TotalFailures:  faktoryPart["total_failures"].(float64),
+		Queues:         queues,
+	}
 }
