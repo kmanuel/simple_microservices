@@ -44,6 +44,14 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
+func startPrometheus() {
+	prometheus.MustRegister(requests)
+	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
+	flag.Parse()
+	http.Handle("/metrics", promhttp.Handler())
+	fmt.Println(http.ListenAndServe(*addr, nil))
+}
+
 func startFaktory() {
 	fs := service.NewFaktoryService(taskType)
 	cropService := service.NewCropService()
@@ -52,12 +60,4 @@ func startFaktory() {
 	cropService = middleware.NewPrometheusMiddleware(cropService, taskType)
 	cropService = middleware.NewRequestStatusMiddleware(statusClient, cropService)
 	fs.Handle(taskType, transport.CreateFaktoryListenHandler(cropService))
-}
-
-func startPrometheus() {
-	prometheus.MustRegister(requests)
-	var addr = flag.String("listen-address", ":8081", "The address to listen on for HTTP requests.")
-	flag.Parse()
-	http.Handle("/metrics", promhttp.Handler())
-	fmt.Println(http.ListenAndServe(*addr, nil))
 }

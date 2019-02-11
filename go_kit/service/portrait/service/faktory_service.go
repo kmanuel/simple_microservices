@@ -61,6 +61,6 @@ func (fs faktoryServiceImpl) Handle(queue string, fn worker.Perform) {
 	mgr.On(worker.Shutdown, func() {
 		quit = true
 	})
-	go mgr.Run()
+	mgr.Run()
 }
 

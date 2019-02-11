@@ -25,7 +25,6 @@ func main() {
 	}
 
 	initMinio()
-	//startJsonRestApi()
 	startExternalApi()
 }
 
@@ -37,64 +36,44 @@ func initMinio() {
 		os.Getenv("BUCKET_NAME"))
 }
 
-//func startJsonRestApi() {
-//	myRouter := mux.NewRouter().StrictSlash(false)
-//	imageHandler := &api_image.ImageHandler{}
-//
-//	myRouter.HandleFunc("/images", imageHandler.ServeUploadHTTP)
-//	myRouter.HandleFunc("/images/{id}", imageHandler.ServeDownload)
-//	myRouter.HandleFunc("/crop", proxyCropRequest)
-//	myRouter.HandleFunc("/screenshot", proxyScreenshotRequest)
-//	myRouter.HandleFunc("/most_significant_image", proxyMostSignificantImageRequest)
-//	myRouter.HandleFunc("/optimization", proxyOptimizationRequest)
-//	myRouter.HandleFunc("/portrait", proxyPortraitRequest)
-//	myRouter.HandleFunc("/tasks", proxyRequestServiceRequest)
-//
-//	log.Fatal(http.ListenAndServe(":8080", myRouter))
-//}
-//
-//func proxyRequestServiceRequest(w http.ResponseWriter, r *http.Request) {
-//	proxyTo("http://request_service:8080", w, r)
-//}
-//
-//func proxyScreenshotRequest(w http.ResponseWriter, r *http.Request) {
-//	proxyTo("http://screenshot:8080", w, r)
-//}
-//
-//func proxyPortraitRequest(w http.ResponseWriter, r *http.Request) {
-//	proxyTo("http://portrait:8080", w, r)
-//}
-//
-//func proxyOptimizationRequest(w http.ResponseWriter, r *http.Request) {
-//	proxyTo("http://optimization:8080", w, r)
-//}
-//
-//func proxyMostSignificantImageRequest(w http.ResponseWriter, r *http.Request) {
-//	proxyTo("http://most_significant_image:8080", w, r)
-//}
-//
-//func proxyCropRequest(w http.ResponseWriter, r *http.Request) {
-//	proxyTo("http://crop:8080", w, r)
-//}
-//
-//func proxyTo(proxyTarget string, w http.ResponseWriter, r *http.Request) {
-//	log.Info("proxying to " + proxyTarget)
-//
-//	serviceUrl, e := url.Parse(proxyTarget)
-//	if e != nil {
-//		panic(e)
-//	}
-//	httputil.NewSingleHostReverseProxy(serviceUrl).ServeHTTP(w, r)
-//}
-
 func startExternalApi() {
 	fs := service.NewFaktoryService()
 
-	requestHandler := httptransport.NewServer(
+	cropHandler := httptransport.NewServer(
 		transport.CreateRestHandler(fs, "crop"),
 		transport.DecodeCropTask,
 		transport.EncodeResponse,
 	)
-	http.Handle("/", requestHandler)
+	http.Handle("/crop", cropHandler)
+
+	mostSignificantImageHandler := httptransport.NewServer(
+		transport.CreateRestHandler(fs, "most_significant_image"),
+		transport.DecodeMostSignificantImageTask,
+		transport.EncodeResponse,
+	)
+	http.Handle("/most_significant_image", mostSignificantImageHandler)
+
+	optimizationHandler := httptransport.NewServer(
+		transport.CreateRestHandler(fs, "optimization"),
+		transport.DecodeOptimizationTask,
+		transport.EncodeResponse,
+	)
+	http.Handle("/optimization", optimizationHandler)
+
+	portraitHandler := httptransport.NewServer(
+		transport.CreateRestHandler(fs, "portrait"),
+		transport.DecodePortraitTask,
+		transport.EncodeResponse,
+	)
+	http.Handle("/portrait", portraitHandler)
+
+	screenshotHandler := httptransport.NewServer(
+		transport.CreateRestHandler(fs, "screenshot"),
+		transport.DecodeScreenshotTask,
+		transport.EncodeResponse,
+	)
+	http.Handle("/screenshot", screenshotHandler)
+
+
 	fmt.Println(http.ListenAndServe(":8080", nil))
 }

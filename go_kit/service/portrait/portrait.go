@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/middleware"
@@ -35,21 +34,11 @@ func main() {
 
 	initMinio()
 
-	var statusClient service.StatusClient
-	statusClient = service.NewStatusClient()
-
 	var optimizationService service.ImageService
 	optimizationService = service.NewOptimizationService()
 
-	var faktoryService service.FaktoryService
-	faktoryService = service.NewFaktoryService(taskType)
-
-	var faktoryListenService service.FaktoryListenService
-	faktoryListenService = faktoryService
-
 	go startPrometheus()
-	go startFaktory(faktoryListenService, optimizationService, statusClient)
-	startExternalApi(faktoryService)
+	startFaktory(optimizationService)
 }
 
 
@@ -70,18 +59,11 @@ func startPrometheus() {
 	fmt.Println(http.ListenAndServe(*addr, nil))
 }
 
-func startFaktory(fs service.FaktoryListenService, optimizationService service.ImageService, statusClient service.StatusClient) {
-	optimizationService = middleware.NewPrometheusMiddleware(optimizationService, taskType)
-	optimizationService = middleware.NewRequestStatusMiddleware(statusClient, optimizationService)
-	fs.Handle(taskType, transport.CreateFaktoryListenHandler(optimizationService))
-}
+func startFaktory(s service.ImageService) {
+	fs := service.NewFaktoryService(taskType)
+	statusClient := service.NewStatusClient()
 
-func startExternalApi(fs service.FaktoryPublishService) {
-	requestHandler := httptransport.NewServer(
-		transport.CreateRestHandler(fs),
-		transport.DecodeScreenshotTask,
-		transport.EncodeResponse,
-	)
-	http.Handle("/", requestHandler)
-	fmt.Println(http.ListenAndServe(":8080", nil))
+	s = middleware.NewPrometheusMiddleware(s, taskType)
+	s = middleware.NewRequestStatusMiddleware(statusClient, s)
+	fs.Handle(taskType, transport.CreateFaktoryListenHandler(s))
 }
