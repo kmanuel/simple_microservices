@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func CreateRestHandler(s service.FaktoryService, taskType string) endpoint.Endpoint {
+func CreateFaktoryHandler(s service.FaktoryService, taskType string) endpoint.Endpoint {
 	return func(_ context.Context, task interface{}) (interface{}, error) {
 		err := s.PublishToFaktory(taskType, task)
 		if err != nil {
