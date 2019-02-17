@@ -1,0 +1,6 @@
+template
+build
+screenshot/vendor
+screenshot/Gopkg.lock
+screenshot/Gopkg.toml
+

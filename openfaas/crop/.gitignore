@@ -1,0 +1,5 @@
+template
+build
+crop/vendor
+crop/Gopkg.lock
+crop/Gopkg.toml

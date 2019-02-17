@@ -1,0 +1,13 @@
+provider:
+  name: faas
+  gateway: http://127.0.0.1:8080
+functions:
+  screenshot:
+    lang: go-with-phantom
+    handler: ./screenshot
+    image: screenshot:latest
+    environment:
+      MINIO_ACCESS_KEY: 123
+      MINIO_SECRET_KEY: 12345678
+      BUCKET_NAME: asiatrip
+      MINIO_HOST: minio:9000
