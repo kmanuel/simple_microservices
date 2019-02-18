@@ -1,0 +1,13 @@
+provider:
+  name: faas
+  gateway: http://127.0.0.1:8080
+functions:
+  most-significant-image:
+    lang: go
+    handler: ./most-significant-image
+    image: most-significant-image:latest
+    environment:
+      MINIO_ACCESS_KEY: 123
+      MINIO_SECRET_KEY: 12345678
+      BUCKET_NAME: asiatrip
+      MINIO_HOST: minio:9000
