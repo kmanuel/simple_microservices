@@ -12,7 +12,6 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
-	"time"
 )
 
 type Task struct {
@@ -55,9 +54,6 @@ func initMinio() {
 }
 
 func handleTask(task *Task) error {
-
-	time.Sleep(60 * time.Second)
-
 	imageId := task.ImageId
 	width := task.Width
 	height := task.Height
