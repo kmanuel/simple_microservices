@@ -12,11 +12,10 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
-	"time"
 )
 
 type Task struct {
-	ID      string `jsonapi:"primary,crop_task"`
+	ID      string `jsonapi:"primary,optimization_task"`
 	ImageId string `jsonapi:"attr,image_id"`
 	Width   int    `jsonapi:"attr,width"`
 	Height  int    `jsonapi:"attr,height"`
@@ -54,25 +53,31 @@ func initMinio() {
 		bucketName)
 }
 
-func handleTask(task *Task) error {
+func handleTask(t *Task) error {
 
-	time.Sleep(60 * time.Second)
-
-	imageId := task.ImageId
-	width := task.Width
-	height := task.Height
-
-	inputImg, err := downloadFile(imageId)
+	downloadedFilePath, err := minioconnector.DownloadFile(t.ImageId)
 	if err != nil {
-		log.Error("meh, downloadFile failed")
 		return err
 	}
 
-	log.Info("starting to crop api_image")
+	outputFilePath, err := optimizeImage(downloadedFilePath, t.Width, t.Height)
+	if err != nil {
+		return err
+	}
 
-	outputFilePath := "/tmp/downloaded" + uuid.New().String() + ".jpg"
+	_, err = minioconnector.UploadFileWithName(outputFilePath, t.ID)
+	if err != nil {
+		return err
+	}
 
-	f, _ := os.Open(inputImg)
+	return nil
+}
+
+func optimizeImage(inputFile string, width int, height int) (string, error) {
+	log.Info("optimizing api_image")
+	outputFilePath := "/tmp/" + uuid.New().String() + ".jpg"
+
+	f, _ := os.Open(inputFile)
 	img, _, _ := image.Decode(f)
 	analyzer := smartcrop.NewAnalyzer(nfnt.NewDefaultResizer())
 	topCrop, _ := analyzer.FindBestCrop(img, width, height)
@@ -80,23 +85,16 @@ func handleTask(task *Task) error {
 		SubImage(r image.Rectangle) image.Image
 	}
 	croppedImg := img.(SubImager).SubImage(topCrop)
-	f, err = os.Create(outputFilePath)
+	f, err := os.Create(outputFilePath)
 	defer f.Close()
 	if err != nil {
-		return err
+		return "", err
 	}
-	if err = jpeg.Encode(f, croppedImg, nil); err != nil {
-		return err
-	}
-
-	if _, err = minioconnector.UploadFileWithName(outputFilePath, task.ID); err != nil {
-		return err
+	err = jpeg.Encode(f, croppedImg, nil)
+	if err != nil {
+		return "", err
 	}
 
-	log.Info("finished cropping api_image")
-	return nil
-}
-
-func downloadFile(objectName string) (string, error) {
-	return minioconnector.DownloadFile(objectName)
+	log.Info("optimized api_image")
+	return outputFilePath, nil
 }

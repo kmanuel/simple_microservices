@@ -1,0 +1,6 @@
+template
+build
+*/vendor
+*/Gopkg.lock
+*/Gopkg.toml
+
