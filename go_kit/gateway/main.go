@@ -5,10 +5,8 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/kmanuel/simple_microservices/go_kit/gateway/transport"
 
-	//"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
-	//"github.com/kmanuel/simple_microservices/go_kit/gateway/api_image"
 	"github.com/kmanuel/simple_microservices/go_kit/gateway/service"
 	"github.com/prometheus/common/log"
 	"net/http"

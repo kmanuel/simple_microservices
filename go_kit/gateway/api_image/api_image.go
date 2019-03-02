@@ -45,10 +45,8 @@ func (h *ImageHandler) uploadImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h ImageHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
-	log.Info("download api_image request")
 	imageId := mux.Vars(r)["id"]
 
-	log.Info("download request for imageId=", imageId)
 	object, err := minioconnector.GetObject(imageId)
 	if err != nil {
 		log.Error(err)
@@ -64,10 +62,8 @@ func (h ImageHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ImageHandler) downloadImage(w http.ResponseWriter, r *http.Request) {
-	log.Info("download api_image request")
 	imageId := mux.Vars(r)["id"]
 
-	log.Info("download request for imageId=", imageId)
 	object, err := minioconnector.GetObject(imageId)
 	if err != nil {
 		log.Error(err)
