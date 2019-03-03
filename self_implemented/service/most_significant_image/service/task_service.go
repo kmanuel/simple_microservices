@@ -6,6 +6,7 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/most_significant_image/model"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/log"
 	"io"
 	"net/http"
 	"os"
@@ -20,10 +21,13 @@ type TaskService interface {
 type taskService struct {
 	counter *prometheus.CounterVec
 	taskType string
+	minioService minioconnector.MinioService
 }
 
-func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
-	return taskService{counter, taskType}
+func NewTaskService(counter *prometheus.CounterVec,
+					taskType string,
+					minioService *minioconnector.MinioService) TaskService {
+	return taskService{counter, taskType, *minioService}
 }
 
 func (h taskService) Handle(t *model.Task) error {
@@ -35,11 +39,13 @@ func (h taskService) Handle(t *model.Task) error {
 
 	err := ExtractMostSignificantImage(task.Url, outputFile)
 	if err != nil {
+		log.Error("extracting of image failed", err)
 		return err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFile, task.ID)
+	_, err = h.minioService.UploadFileWithName(outputFile, task.ID)
 	if err != nil {
+		log.Error("upload failed", err)
 		return err
 	}
 

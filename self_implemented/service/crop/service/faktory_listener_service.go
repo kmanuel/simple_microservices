@@ -41,6 +41,8 @@ func (s faktoryListenerService) Start() error {
 }
 
 func (s faktoryListenerService) handleTask(ctx worker.Context, args ...interface{}) error {
+	log.Info("fetched task from faktory")
+
 	task := new(model.Task)
 	err := jsonapi.NewRuntime().UnmarshalPayload(bytes.NewBufferString(args[0].(string)), task)
 	if err != nil {

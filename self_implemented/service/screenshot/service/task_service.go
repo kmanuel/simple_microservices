@@ -13,12 +13,13 @@ type TaskService interface {
 }
 
 type taskService struct {
-	counter *prometheus.CounterVec
-	taskType string
+	counter      *prometheus.CounterVec
+	taskType     string
+	minioService minioconnector.MinioService
 }
 
-func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
-	return taskService{counter, taskType}
+func NewTaskService(counter *prometheus.CounterVec, taskType string, minioService *minioconnector.MinioService) TaskService {
+	return taskService{counter, taskType, *minioService}
 }
 
 func (h taskService) Handle(t *model.Task) error {
@@ -29,7 +30,7 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFilePath, t.ID)
+	_, err = h.minioService.UploadFileWithName(outputFilePath, t.ID)
 	if err != nil {
 		return err
 	}

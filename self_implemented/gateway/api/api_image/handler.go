@@ -13,6 +13,7 @@ import (
 
 type ImageHandler struct{
 	DispatchCounter *prometheus.CounterVec
+	MinioService minioconnector.MinioService
 }
 
 func (h *ImageHandler) DownloadImage(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +21,7 @@ func (h *ImageHandler) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	imageId := mux.Vars(r)["id"]
 
 	log.Info("download request for imageId=", imageId)
-	object, err := minioconnector.GetObject(imageId)
+	object, err := h.MinioService.GetObject(imageId)
 	if err != nil {
 		w.WriteHeader(500)
 		return
@@ -36,7 +37,7 @@ func (h *ImageHandler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	h.DispatchCounter.With(prometheus.Labels{"type": "upload"}).Inc()
 
 	uploadedFileName := uuid.New().String()
-	err := minioconnector.UploadFileStream(r.Body, uploadedFileName)
+	err := h.MinioService.UploadFileStream(r.Body, uploadedFileName)
 	if err != nil {
 		w.WriteHeader(500)
 		return

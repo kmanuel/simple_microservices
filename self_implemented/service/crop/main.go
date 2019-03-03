@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/crop/service"
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,21 +25,15 @@ var (
 
 func main() {
 	log.Info("starting crop service")
-	initMinio()
-	go startPrometheus()
-	startFaktoryListener()
-}
 
-func initMinio() {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-	minioconnector.Init(
+	minioService := minioconnector.NewMinioService(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
 		os.Getenv("BUCKET_NAME"))
+
+	go startPrometheus()
+	startFaktoryListener(minioService)
 }
 
 func startPrometheus() {
@@ -51,9 +44,8 @@ func startPrometheus() {
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
-func startFaktoryListener() {
-	var taskService service.TaskService
-	taskService = service.NewTaskService(requests, taskType)
+func startFaktoryListener(minioConnector *minioconnector.MinioService) {
+	taskService := service.NewTaskService(minioConnector, requests, taskType)
 
 	faktoryService := service.NewFaktoryListenerService(taskService, taskType)
 

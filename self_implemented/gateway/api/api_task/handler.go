@@ -35,9 +35,7 @@ func (h *ProxyHandler) GetFaktoryInfo(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
 }
-
 
 func (h *ProxyHandler) ProxyToRequestService(w http.ResponseWriter, r *http.Request) {
 	log.Info("received request for all tasks")

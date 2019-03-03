@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_image"
 	. "github.com/kmanuel/simple_microservices/self_implemented/gateway/api/api_root"
@@ -27,29 +26,8 @@ var (
 
 func main() {
 	log.Info("starting gateway")
-
-	loadDotEnv()
-	initMinio()
 	go startPrometheus()
 	startJsonRestApi()
-}
-
-func loadDotEnv() {
-	log.Debug("Loading dotenv")
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func initMinio() {
-	log.Debug("initializing minio")
-
-	minioconnector.Init(
-		os.Getenv("MINIO_HOST"),
-		os.Getenv("MINIO_ACCESS_KEY"),
-		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
 }
 
 func startPrometheus() {
@@ -83,16 +61,21 @@ func registerTaskGauge(typeName string) {
 			return faktoryInfo.Queues[typeName]
 		},
 	)); err == nil {
-		log.Info("GaugeFunc '" + gaugeName +" registered.")
+		log.Info("GaugeFunc '" + gaugeName + " registered.")
 	}
 }
-
 
 func startJsonRestApi() {
 	log.Debug("starting REST API")
 
+	minioService := minioconnector.NewMinioService(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
+
 	rootHandler := &RootHandler{}
-	imageHandler := &api_image.ImageHandler{DispatchCounter: dispatchCounter}
+	imageHandler := &api_image.ImageHandler{DispatchCounter: dispatchCounter, MinioService: *minioService}
 	proxyHandler := &api_task.ProxyHandler{DispatchCounter: dispatchCounter}
 	imageTransformationHandler := &api_image.ImageTaskHandler{DispatchCounter: dispatchCounter}
 

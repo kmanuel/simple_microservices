@@ -6,7 +6,8 @@ services:
     ports:
       - "9000:9000"
     command: server /data
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -45,6 +46,8 @@ services:
   gateway:
     build:
       context: gateway
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     depends_on:
@@ -62,6 +65,8 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -69,6 +74,8 @@ services:
   most_significant_image:
     build:
       context: service/most_significant_image
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -80,7 +87,8 @@ services:
   optimization:
     build:
       context: service/optimization
-    env_file: .env
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -92,6 +100,8 @@ services:
   portrait:
     build:
       context: service/portrait
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -103,6 +113,8 @@ services:
   screenshot:
     build:
       context: service/screenshot
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"

@@ -1,4 +1,32 @@
-FROM golang
+FROM golang:1.12.0 as builder
+
+
+RUN apt-get update && apt-get install -y unzip --no-install-recommends && \
+    apt-get autoremove -y && apt-get clean -y && \
+    wget -O dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && \
+    mv dep /usr/bin && \
+    chmod a+x /usr/bin/dep
+
+RUN mkdir -p /go/src/github.com
+WORKDIR /go/src/github.com
+
+COPY Gopkg.toml Gopkg.lock ./
+
+RUN dep ensure -vendor-only
+
+RUN mv vendor/github.com/* .
+
+RUN mkdir -p /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
+WORKDIR /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
+COPY . .
+RUN go build -ldflags "-linkmode external -extldflags -static" -o app main.go
+
+
+
+
+
+
+FROM debian
 
 RUN apt-get update && \
     apt-get install curl -y
@@ -14,14 +42,11 @@ WORKDIR /tmp
 COPY lib .
 RUN cd ./jpegoptim-1.4.6 && ./configure && make && make install
 
-RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
-WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
+WORKDIR /app
 
-COPY . .
-
-RUN go get ./
-RUN go build
+COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization/app .
 
 ENV FAKTORY_URL tcp://faktory:7419
+EXPOSE 8080
 
-ENTRYPOINT ["go", "run", "main.go"]
+ENTRYPOINT ["/app/app"]

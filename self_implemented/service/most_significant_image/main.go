@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/most_significant_image/service"
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,21 +24,8 @@ var (
 )
 
 func main() {
-	initMinio()
 	go startPrometheus()
 	startFaktoryListener()
-}
-
-func initMinio() {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-	minioconnector.Init(
-		os.Getenv("MINIO_HOST"),
-		os.Getenv("MINIO_ACCESS_KEY"),
-		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
 }
 
 func startPrometheus() {
@@ -51,8 +37,14 @@ func startPrometheus() {
 }
 
 func startFaktoryListener() {
+	minioService := minioconnector.NewMinioService(
+		os.Getenv("MINIO_HOST"),
+		os.Getenv("MINIO_ACCESS_KEY"),
+		os.Getenv("MINIO_SECRET_KEY"),
+		os.Getenv("BUCKET_NAME"))
+
 	var taskService service.TaskService
-	taskService = service.NewTaskService(requests, taskType)
+	taskService = service.NewTaskService(requests, taskType, minioService)
 
 	faktoryService := service.NewFaktoryListenerService(taskService, taskType)
 

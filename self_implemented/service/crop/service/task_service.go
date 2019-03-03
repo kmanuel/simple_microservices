@@ -18,26 +18,37 @@ type TaskService interface {
 }
 
 type taskService struct {
+	minioService minioconnector.MinioService
 	counter *prometheus.CounterVec
 	taskType string
 }
 
-func NewTaskService(counter *prometheus.CounterVec, taskType string) TaskService {
-	return taskService{counter, taskType}
+func NewTaskService(
+	minioService *minioconnector.MinioService,
+	counter *prometheus.CounterVec,
+	taskType string) TaskService {
+	return taskService{*minioService, counter, taskType}
 }
 
 func (h taskService) Handle(t *model.Task) error {
+	log.Info("handling task")
+
 	h.counter.With(prometheus.Labels{"type": h.taskType}).Inc()
 
-	downloadedFilePath, err := minioconnector.DownloadFile(t.ImageId)
+	downloadedFilePath, err := h.minioService.DownloadFile(t.ImageId)
 	if err != nil {
+		log.Error("failed to download file: " + t.ImageId, err)
 		return err
 	}
 	croppedFilePath, err := cropImage(downloadedFilePath, t.Width, t.Height)
 	if err != nil {
+		log.Error("failed to cropImage", err)
 		return err
 	}
-	_, err = minioconnector.UploadFileWithName(croppedFilePath, t.ID)
+	_, err = h.minioService.UploadFileWithName(croppedFilePath, t.ID)
+	if err != nil {
+		log.Error("failed to upload file")
+	}
 	return err
 }
 
