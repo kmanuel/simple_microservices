@@ -1,7 +1,7 @@
 FROM golang
 
-RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/most_significant_image
-WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/most_significant_image
+RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/most_significant_image
+WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/most_significant_image
 
 COPY . .
 

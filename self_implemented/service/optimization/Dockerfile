@@ -14,8 +14,8 @@ WORKDIR /tmp
 COPY lib .
 RUN cd ./jpegoptim-1.4.6 && ./configure && make && make install
 
-RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/optimization
-WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/optimization
+RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
+WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
 
 COPY . .
 

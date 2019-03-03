@@ -2,10 +2,8 @@ FROM golang
 
 RUN export PATH="$PATH:$GOPATH/bin"
 
-RUN go get -u github.com/esimov/caire/cmd/caire
-
-RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/portrait
-WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/portrait
+RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/portrait
+WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/portrait
 
 COPY . .
 

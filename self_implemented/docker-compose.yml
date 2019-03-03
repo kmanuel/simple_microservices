@@ -42,28 +42,6 @@ services:
       restart_policy:
         condition: on-failure
 
-  postgres:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=example
-      - POSTGRES_PASSWORD=example
-      - POSTGRES_DB=simple_ms
-    env_file: .env
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-  request_service:
-    build:
-      context: src/request_service
-    depends_on:
-    - "postgres"
-    deploy:
-      restart_policy:
-        condition: on-failure
-
   gateway:
     build:
       context: gateway
@@ -73,68 +51,62 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure
 
   crop:
     build:
-      context: src/service/crop
+      context: service/crop
     depends_on:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure
 
   most_significant_image:
     build:
-      context: src/service/most_significant_image
+      context: service/most_significant_image
     depends_on:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure
 
   optimization:
     build:
-      context: src/service/optimization
+      context: service/optimization
     env_file: .env
     depends_on:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure
 
   portrait:
     build:
-      context: src/service/portrait
+      context: service/portrait
     depends_on:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure
 
   screenshot:
     build:
-      context: src/service/screenshot
+      context: service/screenshot
     depends_on:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure

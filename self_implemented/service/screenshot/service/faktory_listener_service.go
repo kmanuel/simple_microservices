@@ -13,14 +13,12 @@ type FaktoryListenerService interface {
 
 type faktoryListenerService struct {
 	taskService TaskService
-	taskStatusService TaskStatusService
 	taskType string
 }
 
-func NewFaktoryListenerService(taskStatusService TaskStatusService, taskService TaskService, taskType string) FaktoryListenerService {
+func NewFaktoryListenerService(taskService TaskService, taskType string) FaktoryListenerService {
 	return faktoryListenerService{
 		taskService: taskService,
-		taskStatusService: taskStatusService,
 		taskType: taskType,
 	}
 }
@@ -29,7 +27,7 @@ func (s faktoryListenerService) Start() error {
 	mgr := worker.NewManager()
 	mgr.Concurrency = 1
 	mgr.Register(s.taskType, s.handleTask)
-	mgr.Queues = []string{s.taskType}
+	mgr.ProcessStrictPriorityQueues(s.taskType)
 	var quit bool
 	mgr.On(worker.Shutdown, func() {
 		quit = true
@@ -47,20 +45,5 @@ func (s faktoryListenerService) handleTask(ctx worker.Context, args ...interface
 		return err
 	}
 
-	err = s.taskStatusService.NotifyAboutNewTask(task.ID, s.taskType)
-	if err != nil {
-		return err
-	}
-
-	err = s.taskService.Handle(task)
-	if err != nil {
-		return err
-	}
-
-	err = s.taskStatusService.NotifyAboutCompletion(task.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.taskService.Handle(task)
 }

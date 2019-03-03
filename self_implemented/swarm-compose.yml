@@ -42,27 +42,6 @@ services:
       restart_policy:
         condition: on-failure
 
-  postgres:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=example
-      - POSTGRES_PASSWORD=example
-      - POSTGRES_DB=simple_ms
-    env_file: .env
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-  request_service:
-    image: swarm_request_service
-    depends_on:
-    - "postgres"
-    deploy:
-      restart_policy:
-        condition: on-failure
-
   gateway:
     image: swarm_gateway
     ports:
@@ -71,7 +50,6 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       restart_policy:
         condition: on-failure
@@ -82,7 +60,6 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       resources:
         limits:
@@ -97,7 +74,6 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       resources:
         limits:
@@ -113,7 +89,6 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       resources:
         limits:
@@ -128,7 +103,6 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       resources:
         limits:
@@ -143,7 +117,6 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-      - "request_service"
     deploy:
       resources:
         limits:

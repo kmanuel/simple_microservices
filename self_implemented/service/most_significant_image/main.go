@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/afex/hystrix-go/hystrix"
 	"github.com/joho/godotenv"
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/most_significant_image/service"
@@ -32,12 +31,6 @@ func main() {
 }
 
 func initMinio() {
-	hystrix.ConfigureCommand("update_task_status", hystrix.CommandConfig{
-		Timeout:               60000,
-		MaxConcurrentRequests: 100,
-		ErrorPercentThreshold: 25,
-	})
-
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
@@ -58,13 +51,10 @@ func startPrometheus() {
 }
 
 func startFaktoryListener() {
-	var statusService service.TaskStatusService
-	statusService = service.NewTaskStatusService()
-
 	var taskService service.TaskService
 	taskService = service.NewTaskService(requests, taskType)
 
-	faktoryService := service.NewFaktoryListenerService(statusService, taskService, taskType)
+	faktoryService := service.NewFaktoryListenerService(taskService, taskType)
 
 	err := faktoryService.Start()
 	if err != nil {

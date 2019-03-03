@@ -3,8 +3,8 @@ FROM golang
 RUN apt-get update
 RUN apt-get install libfontconfig -y
 
-RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/screenshot
-WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/src/service/screenshot
+RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/screenshot
+WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/self_implemented/service/screenshot
 
 COPY . .
 

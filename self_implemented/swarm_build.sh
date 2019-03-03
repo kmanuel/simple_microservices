@@ -34,9 +34,3 @@ go build -ldflags "-linkmode external -extldflags -static" -o gateway/app gatewa
 cd gateway
 docker build -t swarm_gateway -f PrecompDockerfile .
 cd ..
-
-
-go build -ldflags "-linkmode external -extldflags -static" -o service/request_service/app service/request_service/main.go
-cd service/request_service
-docker build -t swarm_request_service -f PrecompDockerfile .
-cd ../..
