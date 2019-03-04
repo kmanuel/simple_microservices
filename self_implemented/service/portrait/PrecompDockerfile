@@ -1,9 +1,0 @@
-FROM alpine
-
-ADD app app
-ADD .env .env
-COPY data data
-
-ENV FAKTORY_URL tcp://faktory:7419
-
-ENTRYPOINT ["/app"]
