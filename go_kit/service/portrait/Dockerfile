@@ -1,17 +1,37 @@
-FROM golang
+FROM golang:1.12.0 as builder
 
-RUN export PATH="$PATH:$GOPATH/bin"
 
-RUN mkdir --parent $GOPATH/src/github.com/kmanuel/simple_microservices/go_kit/service/portrait
-WORKDIR $GOPATH/src/github.com/kmanuel/simple_microservices/go_kit/service/portrait
+RUN apt-get update && apt-get install -y unzip --no-install-recommends && \
+    apt-get autoremove -y && apt-get clean -y && \
+    wget -O dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && \
+    mv dep /usr/bin && \
+    chmod a+x /usr/bin/dep
 
-COPY . .
+RUN mkdir -p /go/src/github.com
+WORKDIR /go/src/github.com
 
-RUN go get ./
-RUN go build
+COPY Gopkg.toml Gopkg.lock ./
+
+RUN dep ensure -vendor-only
+
+RUN mv vendor/github.com/* .
+
+RUN mkdir -p /go/src/github.com/kmanuel/simple_microservices/go_kit/service/portrait/src
+WORKDIR /go/src/github.com/kmanuel/simple_microservices/go_kit/service/portrait/src
+COPY src/ .
+RUN go build -ldflags "-linkmode external -extldflags -static" -o app main.go
+
+
+
+FROM alpine:3.8
+
+WORKDIR /app
+
+COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/go_kit/service/portrait/src/app .
+RUN mkdir data
+COPY src/data data
 
 ENV FAKTORY_URL tcp://faktory:7419
-
 EXPOSE 8080
 
-ENTRYPOINT ["go", "run", "portrait.go"]
+ENTRYPOINT ["/app/app"]
