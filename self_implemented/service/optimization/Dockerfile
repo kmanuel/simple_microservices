@@ -1,6 +1,5 @@
 FROM golang:1.12.0 as builder
 
-
 RUN apt-get update && apt-get install -y unzip --no-install-recommends && \
     apt-get autoremove -y && apt-get clean -y && \
     wget -O dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && \
@@ -16,13 +15,11 @@ RUN dep ensure -vendor-only
 
 RUN mv vendor/github.com/* .
 
-RUN mkdir -p /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
-WORKDIR /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization
-COPY . .
-RUN go build -ldflags "-linkmode external -extldflags -static" -o app main.go
-
-
-
+RUN mkdir -p /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization/src
+WORKDIR /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization/src
+COPY src/ .
+RUN go build -ldflags "-linkmode external -extldflags -static" -o app main.go && \
+    chmod +x app
 
 
 
@@ -44,7 +41,7 @@ RUN cd ./jpegoptim-1.4.6 && ./configure && make && make install
 
 WORKDIR /app
 
-COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization/app .
+COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/optimization/src/app .
 
 ENV FAKTORY_URL tcp://faktory:7419
 EXPOSE 8080

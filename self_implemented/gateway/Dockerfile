@@ -15,18 +15,20 @@ RUN dep ensure -vendor-only
 
 RUN mv vendor/github.com/* .
 
-RUN mkdir -p /go/src/github.com/kmanuel/simple_microservices/self_implemented/gateway
-WORKDIR /go/src/github.com/kmanuel/simple_microservices/self_implemented/gateway
-COPY . .
-RUN go build -ldflags "-linkmode external -extldflags -static" -o app main.go
+RUN mkdir -p /go/src/github.com/kmanuel/simple_microservices/self_implemented/gateway/src
+WORKDIR /go/src/github.com/kmanuel/simple_microservices/self_implemented/gateway/src
+COPY src/ .
+RUN go build -ldflags "-linkmode external -extldflags -static" -o app main.go && \
+    chmod +x app
 
 
 
 FROM alpine:3.8
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
-COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/gateway/app .
+COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/gateway/src/app .
 
 ENV FAKTORY_URL tcp://faktory:7419
 EXPOSE 8080
