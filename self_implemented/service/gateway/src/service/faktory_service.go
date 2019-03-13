@@ -2,7 +2,7 @@ package service
 
 import (
 	faktory "github.com/contribsys/faktory/client"
-	"github.com/kmanuel/simple_microservices/self_implemented/gateway/src/model"
+	"github.com/kmanuel/simple_microservices/self_implemented/service/gateway/src/model"
 	"github.com/prometheus/common/log"
 )
 

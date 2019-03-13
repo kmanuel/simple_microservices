@@ -77,14 +77,6 @@
   version = "v1.7.0"
 
 [[projects]]
-  digest = "1:ecd9aa82687cf31d1585d4ac61d0ba180e42e8a6182b85bd785fcca8dfeefc1b"
-  name = "github.com/joho/godotenv"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "23d116af351c84513e1946b527c88823e476be13"
-  version = "v1.3.0"
-
-[[projects]]
   branch = "master"
   digest = "1:517f47ec00248b964a6f143254d3c7ff511b158096f5971ca76ccf34cf7d95e9"
   name = "github.com/kmanuel/minioconnector"
@@ -109,7 +101,7 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:21902573f9cb2111c903cdd0b340d0df7fa2cbcef5649ea90e367f8df91adf66"
+  digest = "1:523ffd935398ef4979acbf085e52c624a82f49643bc6dadbe5ea824904cd49be"
   name = "github.com/minio/minio-go"
   packages = [
     ".",
@@ -120,8 +112,8 @@
     "pkg/set",
   ]
   pruneopts = "UT"
-  revision = "008c7aa71fc17e11bf980c209a4f8c4d687fc884"
-  version = "v6.0.18"
+  revision = "59af836a7e6d99cbefa093475fbde0a4552d483f"
+  version = "v6.0.19"
 
 [[projects]]
   digest = "1:5d231480e1c64a726869bc4142d270184c419749d34f167646baa21008eb0a79"
@@ -166,7 +158,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bfc66a1fd78dc8f14d419fd52a5a42db1d572e887ebcc80b98c1a515a8f2d837"
+  digest = "1:01cd0cd47758f04c5604daa3be4637e2afa1e0c15af7e08289e95360369e4f48"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
@@ -176,15 +168,15 @@
     "xfs",
   ]
   pruneopts = "UT"
-  revision = "bbced9601137e764853b2fad7ec3e2dc4c504e02"
+  revision = "d0f344d83b0c80a1bc03b547a2374a9ec6711144"
 
 [[projects]]
-  digest = "1:87c2e02fb01c27060ccc5ba7c5a407cc91147726f8f40b70cceeedbc52b1f3a8"
+  digest = "1:e4c72127d910a96daf869a44f3dd563b86dbe6931a172863a0e99c5ff04b59e4"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
-  version = "v1.3.0"
+  revision = "dae0fa8d5b0c810a8ab733fbd5510c7cae84eca4"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -196,7 +188,7 @@
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "8dd112bcdc25174059e45e07517d9fc663123347"
+  revision = "a1f597ede03a7bef967a422b5b3a5bd08805a01e"
 
 [[projects]]
   branch = "master"
@@ -210,11 +202,11 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "16b79f2e4e95ea23b2bf9903c9809ff7b013ce85"
+  revision = "5c2c250b6a70e39b74bb544433a348a892b10530"
 
 [[projects]]
   branch = "master"
-  digest = "1:b7c21e87c2f27c2cc5edcfa6d76b9869d510d3735a72641a53a23456ccde95cb"
+  digest = "1:402b68b68f377940136a4f47a9fcca3cc3d376c71973cf201a3fe4f1914bddb6"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
@@ -224,7 +216,7 @@
     "windows/svc/eventlog",
   ]
   pruneopts = "UT"
-  revision = "d455e41777fca6e8a5a79e34a14b8368bc11d9ba"
+  revision = "fead79001313d15903fb4605b4a1b781532cd93e"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -273,7 +265,6 @@
     "github.com/google/jsonapi",
     "github.com/google/uuid",
     "github.com/gorilla/mux",
-    "github.com/joho/godotenv",
     "github.com/kmanuel/minioconnector",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
