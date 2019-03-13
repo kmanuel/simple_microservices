@@ -4,6 +4,14 @@ import time
 import subprocess
 from subprocess import PIPE
 import re
+import signal
+import sys
+
+def signal_handler(sig, frame):
+    subprocess.run(["docker", "stack", "rm", "self_impl_swarm"])
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 def fetch_queues():
     response = urllib.request.urlopen("http://127.0.0.1:8080/info")
@@ -20,7 +28,7 @@ def get_current_instances_of_service(service_name):
 
 def scale_service_to(service, instances):
     print("scale service " + service + " to " + str(instances) + " instances")
-    subprocess.run(["docker", "service", "scale", "self_impl_swarm_" + service + "=" + str(instances)])
+    subprocess.run(["docker", "service", "scale", "-d", "self_impl_swarm_" + service + "=" + str(instances)])
 
 
 service_names = ["crop", "most_significant_image", "optimization", "portrait", "screenshot"]

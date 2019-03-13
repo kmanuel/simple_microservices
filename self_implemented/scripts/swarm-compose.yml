@@ -6,7 +6,8 @@ services:
     ports:
       - "9000:9000"
     command: server /data
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -44,6 +45,8 @@ services:
 
   gateway:
     image: swarm_gateway
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     depends_on:
@@ -56,6 +59,8 @@ services:
 
   crop:
     image: swarm_crop
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -70,6 +75,8 @@ services:
 
   most_significant_image:
     image: swarm_most_significant_image
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -84,7 +91,8 @@ services:
 
   optimization:
     image: swarm_optimization
-    env_file: .env
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -99,6 +107,8 @@ services:
 
   portrait:
     image: swarm_portrait
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -113,6 +123,8 @@ services:
 
   screenshot:
     image: swarm_screenshot
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"

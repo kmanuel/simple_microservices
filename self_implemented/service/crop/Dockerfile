@@ -30,7 +30,6 @@ WORKDIR /app
 
 COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/crop/src/app .
 
-ENV FAKTORY_URL tcp://faktory:7419
 EXPOSE 8080
 
 ENTRYPOINT ["/app/app"]

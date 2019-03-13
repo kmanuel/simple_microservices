@@ -29,11 +29,9 @@ RUN apt-get update -y && apt-get install libfontconfig -y
 
 WORKDIR /app
 
-
 COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_implemented/service/screenshot/src/app .
 COPY lib ./lib
 
-ENV FAKTORY_URL tcp://faktory:7419
 EXPOSE 8080
 
 ENTRYPOINT ["/app/app"]

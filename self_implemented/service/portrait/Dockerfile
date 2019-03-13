@@ -32,7 +32,6 @@ COPY --from=builder /go/src/github.com/kmanuel/simple_microservices/self_impleme
 RUN mkdir data
 COPY data data
 
-ENV FAKTORY_URL tcp://faktory:7419
 EXPOSE 8080
 
 ENTRYPOINT ["/app/app"]
