@@ -27,10 +27,19 @@ service_names = ["crop", "most_significant_image", "optimization", "portrait", "
 
 
 while True:
-    queues = fetch_queues()
+    try:
+        queues = fetch_queues()
+    except:
+        print("scale_service.py: could not fetch task queue data")
+        time.sleep(1)
+        continue
+
     print(queues)
 
     for service in service_names:
+        if queues.get(service) == None:
+            continue
+
         instances = get_current_instances_of_service(service)
 
         open_tasks = queues[service]
