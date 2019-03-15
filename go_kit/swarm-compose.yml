@@ -6,7 +6,8 @@ services:
     ports:
       - "9000:9000"
     command: server /data
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -23,7 +24,7 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${PWD}/infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     deploy:
@@ -33,38 +34,19 @@ services:
   grafana:
     image: grafana/grafana
     volumes:
-      - ${PWD}/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-      - ${PWD}/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards/
+      - ${PWD}/infrastructure/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ${PWD}/infrastructure/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${PWD}/infrastructure/grafana/dashboards:/var/lib/grafana/dashboards/
     ports:
       - "3000:3000"
     deploy:
       restart_policy:
         condition: on-failure
 
-  postgres:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=example
-      - POSTGRES_PASSWORD=example
-      - POSTGRES_DB=simple_ms
-    env_file: .env
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-  request_service:
-    image: swarm_request_service
-    depends_on:
-    - "postgres"
-    deploy:
-      restart_policy:
-        condition: on-failure
-
   gateway:
     image: swarm_gateway
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     depends_on:
@@ -78,6 +60,8 @@ services:
 
   crop:
     image: swarm_crop
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -93,6 +77,8 @@ services:
 
   most_significant_image:
     image: swarm_most_significant_image
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -108,7 +94,8 @@ services:
 
   optimization:
     image: swarm_optimization
-    env_file: .env
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -124,6 +111,8 @@ services:
 
   portrait:
     image: swarm_portrait
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"
@@ -139,6 +128,8 @@ services:
 
   screenshot:
     image: swarm_screenshot
+    env_file:
+      - .env
     depends_on:
       - "minio"
       - "faktory"

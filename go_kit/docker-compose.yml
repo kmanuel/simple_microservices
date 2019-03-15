@@ -6,7 +6,8 @@ services:
     ports:
       - "9000:9000"
     command: server /data
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -16,7 +17,8 @@ services:
     ports:
       - "7419:7419"
       - "7420:7420"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -24,10 +26,11 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${PWD}/infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -35,26 +38,28 @@ services:
   grafana:
     image: grafana/grafana
     volumes:
-      - ${PWD}/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-      - ${PWD}/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards/
+      - ${PWD}/infrastructure/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ${PWD}/infrastructure/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${PWD}/infrastructure/grafana/dashboards:/var/lib/grafana/dashboards/
     ports:
       - "3000:3000"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
 
   gateway:
     build:
-      context: gateway
+      context: service/gateway
     ports:
       - "8080:8080"
     depends_on:
       - "minio"
       - "faktory"
       - "prometheus"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -66,7 +71,8 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -78,7 +84,8 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -90,7 +97,8 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -102,7 +110,8 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
@@ -114,7 +123,8 @@ services:
       - "minio"
       - "faktory"
       - "prometheus"
-    env_file: .env
+    env_file:
+      - .env
     deploy:
       restart_policy:
         condition: on-failure
