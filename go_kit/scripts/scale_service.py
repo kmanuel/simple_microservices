@@ -7,8 +7,16 @@ import re
 import signal
 import sys
 
+max_instances_per_service = {
+  "crop": 5,
+  "most_significant_image": 5,
+  "optimization": 5,
+  "portrait": 1,
+  "screenshot": 5
+}
+
 def signal_handler(sig, frame):
-    subprocess.run(["docker", "stack", "rm", "kit_swarm"])
+    subprocess.run(["docker", "stack", "rm", "self_impl_swarm"])
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -21,14 +29,14 @@ def fetch_queues():
 
 
 def get_current_instances_of_service(service_name):
-    out = subprocess.run(["docker", "stack", "services", "--format", "\"{{.Replicas}}\"", "-f", "name=kit_swarm_" + service_name, "kit_swarm"], stdout=PIPE)
+    out = subprocess.run(["docker", "stack", "services", "--format", "\"{{.Replicas}}\"", "-f", "name=self_impl_swarm_" + service_name, "self_impl_swarm"], stdout=PIPE)
     string_output = out.stdout.decode("utf-8")
     return int(re.search("\/(\d+)", string_output).groups(1)[0])
 
 
 def scale_service_to(service, instances):
     print("scale service " + service + " to " + str(instances) + " instances")
-    subprocess.run(["docker", "service", "scale", "-d", "kit_swarm_" + service + "=" + str(instances)])
+    subprocess.run(["docker", "service", "scale", "-d", "self_impl_swarm_" + service + "=" + str(instances)])
 
 
 service_names = ["crop", "most_significant_image", "optimization", "portrait", "screenshot"]
@@ -53,6 +61,7 @@ while True:
         open_tasks = queues[service]
 
         if (instances * 10) < open_tasks or (instances * 10) > open_tasks:
+            max_instances_for_service = max_instances_per_service.get(service)
             target_instances = min(5, int(open_tasks / 10))
             if target_instances > 0 and target_instances != instances:
                 scale_service_to(service, target_instances)
