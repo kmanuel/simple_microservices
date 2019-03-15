@@ -1,8 +1,7 @@
-./gateway/gateway
-./service/crop/crop
-./service/most_significant_image/most_significant_image
-./service/optimization/optimization
-./service/portrait/portrait
-./service/request_service/request_service
-./service/screenshot/screenshot
-./**/app
+.idea
+test/
+
+**/app
+**/vendor
+
+imgs/**
