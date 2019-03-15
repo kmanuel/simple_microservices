@@ -4,4 +4,4 @@ test/
 **/app
 **/vendor
 
-imgs/images
+imgs/**
