@@ -6,6 +6,9 @@ import (
 	"github.com/kmanuel/simple_microservices/self_implemented/service/screenshot/src/model"
 	"github.com/prometheus/client_golang/prometheus"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TaskService interface {
@@ -30,12 +33,18 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = h.minioService.UploadFileWithName(outputFilePath, t.ID)
+	_, err = h.minioService.UploadFileWithName(outputFilePath, h.createFileName(t))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (h taskService) createFileName(task *model.Task) string {
+	inputFileName := strings.Replace(task.Url, ".", "_", -1)
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_" + h.taskType + ".jpg"
 }
 
 func takeScreenShot(url string) (string, error) {

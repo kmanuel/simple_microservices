@@ -11,6 +11,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const outputImageLocation = "/tmp/"
@@ -61,12 +64,18 @@ func handleTask(t *Task) error {
 		return err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFile, task.ID)
+	_, err = minioconnector.UploadFileWithName(outputFile, createFileName(t))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *Task) string {
+	inputFileName := strings.Replace(task.Url, ".", "_", -1)
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_most_significant_image.jpg"
 }
 
 func ExtractMostSignificantImage(inputUrl string, outputFile string) error {

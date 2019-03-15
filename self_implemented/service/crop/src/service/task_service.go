@@ -11,6 +11,9 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TaskService interface {
@@ -19,8 +22,8 @@ type TaskService interface {
 
 type taskService struct {
 	minioService minioconnector.MinioService
-	counter *prometheus.CounterVec
-	taskType string
+	counter      *prometheus.CounterVec
+	taskType     string
 }
 
 func NewTaskService(
@@ -37,7 +40,7 @@ func (h taskService) Handle(t *model.Task) error {
 
 	downloadedFilePath, err := h.minioService.DownloadFile(t.ImageId)
 	if err != nil {
-		log.Error("failed to download file: " + t.ImageId, err)
+		log.Error("failed to download file: "+t.ImageId, err)
 		return err
 	}
 	croppedFilePath, err := cropImage(downloadedFilePath, t.Width, t.Height)
@@ -45,11 +48,19 @@ func (h taskService) Handle(t *model.Task) error {
 		log.Error("failed to cropImage", err)
 		return err
 	}
-	_, err = h.minioService.UploadFileWithName(croppedFilePath, t.ID)
+
+	_, err = h.minioService.UploadFileWithName(croppedFilePath, h.createFileName(t))
 	if err != nil {
 		log.Error("failed to upload file")
 	}
 	return err
+}
+
+func (h taskService) createFileName(task *model.Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
+	return inputFileName + "_" + timestamp + "_" + h.taskType + "_" + taskParams + ".jpg"
 }
 
 func cropImage(inputImg string, width int, height int) (string, error) {

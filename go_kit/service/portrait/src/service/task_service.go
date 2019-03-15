@@ -6,6 +6,9 @@ import (
 	"github.com/kmanuel/simple_microservices/go_kit/service/portrait/src/model"
 	"github.com/prometheus/common/log"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type ImageService interface {
@@ -31,12 +34,19 @@ func (s optimizationServiceImpl) HandleTask(task *model.Task) error {
 		return err
 	}
 
-	_, err = s.minioService.UploadFileWithName(outputFilePath, task.ID)
+	_, err = s.minioService.UploadFileWithName(outputFilePath, createFileName(task))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *model.Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
+	return inputFileName + "_" + timestamp + "_portrait_" + taskParams + ".jpg"
 }
 
 func extractPortrait(taskId string, inputLocation string, width int, height int) (string, error) {

@@ -8,6 +8,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TaskService interface {
@@ -37,12 +40,20 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = h.minioService.UploadFileWithName(outputFilePath, t.ID)
+	outputFileName := h.createFileName(t)
+	_, err = h.minioService.UploadFileWithName(outputFilePath, outputFileName)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (h taskService) createFileName(task *model.Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
+	return inputFileName + "_" + timestamp + "_" + h.taskType + "_" + taskParams + ".jpg"
 }
 
 func ExtractPortrait(inputLocation string, width int, height int) (string, error) {

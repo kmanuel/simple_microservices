@@ -12,6 +12,9 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Task struct {
@@ -85,12 +88,19 @@ func handleTask(task *Task) error {
 		return err
 	}
 
-	if _, err = minioconnector.UploadFileWithName(outputFilePath, task.ID); err != nil {
+	if _, err = minioconnector.UploadFileWithName(outputFilePath, createFileName(task)); err != nil {
 		return err
 	}
 
 	log.Info("finished cropping api_image")
 	return nil
+}
+
+func createFileName(task *Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
+	return inputFileName + "_" + timestamp + "_crop_" + taskParams + ".jpg"
 }
 
 func downloadFile(objectName string) (string, error) {

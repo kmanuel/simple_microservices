@@ -9,6 +9,9 @@ import (
 	"github.com/prometheus/common/log"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Task struct {
@@ -62,12 +65,18 @@ func handleTask(t *Task) error {
 		return err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFilePath, t.ID)
+	_, err = minioconnector.UploadFileWithName(outputFilePath, createFileName(t))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_optimization.jpg"
 }
 
 func optimizeImage(inputFile string) (string, error) {
@@ -81,4 +90,3 @@ func optimizeImage(inputFile string) (string, error) {
 	log.Info("optimized api_image")
 	return inputFile, nil
 }
-

@@ -9,6 +9,9 @@ import (
 	"github.com/prometheus/common/log"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Task struct {
@@ -62,9 +65,15 @@ func handleTask(task *Task) error {
 		return err
 	}
 
-	if _, err := minioconnector.UploadFileWithName(outputFilePath, task.ID); err != nil {
+	if _, err := minioconnector.UploadFileWithName(outputFilePath, createFileName(task)); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *Task) string {
+	inputFileName := strings.Replace(task.Url, ".", "_", -1)
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_screenshot.jpg"
 }

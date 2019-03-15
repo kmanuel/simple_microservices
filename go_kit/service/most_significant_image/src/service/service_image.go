@@ -9,6 +9,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const outputImageLocation = "/tmp/"
@@ -17,7 +20,7 @@ type ImageService interface {
 	HandleTask(*model.Task) error
 }
 
-type mostSignificantImageService struct{
+type mostSignificantImageService struct {
 	minioService minioconnector.MinioService
 }
 
@@ -38,12 +41,18 @@ func (s mostSignificantImageService) HandleTask(t *model.Task) error {
 	}
 
 	log.Info("uploading file")
-	if _, err = s.minioService.UploadFileWithName(filePath, t.ID); err != nil {
+	if _, err = s.minioService.UploadFileWithName(filePath, createFileName(t)); err != nil {
 		log.Info("error while uploading file", err)
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *model.Task) string {
+	inputFileName := strings.Replace(task.Url, ".", "_", -1)
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_most_significant_image.jpg"
 }
 
 func downloadImage(url string, outputFile string) error {

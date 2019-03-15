@@ -10,6 +10,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const outputImageLocation = "/tmp/"
@@ -19,14 +22,14 @@ type TaskService interface {
 }
 
 type taskService struct {
-	counter *prometheus.CounterVec
-	taskType string
+	counter      *prometheus.CounterVec
+	taskType     string
 	minioService minioconnector.MinioService
 }
 
 func NewTaskService(counter *prometheus.CounterVec,
-					taskType string,
-					minioService *minioconnector.MinioService) TaskService {
+	taskType string,
+	minioService *minioconnector.MinioService) TaskService {
 	return taskService{counter, taskType, *minioService}
 }
 
@@ -43,13 +46,20 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = h.minioService.UploadFileWithName(outputFile, task.ID)
+	fileName := h.createFileName(t)
+	_, err = h.minioService.UploadFileWithName(outputFile, fileName)
 	if err != nil {
 		log.Error("upload failed", err)
 		return err
 	}
 
 	return nil
+}
+
+func (h taskService) createFileName(task *model.Task) string {
+	inputFileName := strings.Replace(task.Url, ".", "_", -1)
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_" + h.taskType + ".jpg"
 }
 
 func ExtractMostSignificantImage(inputUrl string, outputFile string) error {

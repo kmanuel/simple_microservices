@@ -9,6 +9,9 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/prometheus/common/log"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Task struct {
@@ -62,12 +65,19 @@ func handleTask(t *Task) error {
 		return err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFilePath, t.ID)
+	_, err = minioconnector.UploadFileWithName(outputFilePath, createFileName(t))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
+	return inputFileName + "_" + timestamp + "_portrait_" + taskParams + ".jpg"
 }
 
 func ExtractPortrait(inputLocation string, width int, height int) (string, error) {

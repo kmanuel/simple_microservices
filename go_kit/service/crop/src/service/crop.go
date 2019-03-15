@@ -10,6 +10,9 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type ImageService interface {
@@ -20,7 +23,7 @@ func NewCropService(service *minioconnector.MinioService) ImageService {
 	return cropServiceImpl{*service}
 }
 
-type cropServiceImpl struct{
+type cropServiceImpl struct {
 	minioService minioconnector.MinioService
 }
 
@@ -55,12 +58,19 @@ func (c cropServiceImpl) HandleTask(task *model.Task) error {
 		return err
 	}
 
-	if _, err = c.minioService.UploadFileWithName(outputFilePath, task.ID); err != nil {
+	if _, err = c.minioService.UploadFileWithName(outputFilePath, createFileName(task)); err != nil {
 		return err
 	}
 
 	log.Info("finished cropping api_image")
 	return nil
+}
+
+func createFileName(task *model.Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
+	return inputFileName + "_" + timestamp + "_crop_" + taskParams + ".jpg"
 }
 
 func (c cropServiceImpl) downloadFile(objectName string) (string, error) {

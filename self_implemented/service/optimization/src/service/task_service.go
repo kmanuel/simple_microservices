@@ -6,6 +6,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TaskService interface {
@@ -41,6 +44,12 @@ func (h taskService) Handle(t *model.Task) error {
 	}
 
 	return nil
+}
+
+func (h taskService) createFileName(task *model.Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_" + h.taskType + ".jpg"
 }
 
 func optimizeImage(inputFile string) (string, error) {

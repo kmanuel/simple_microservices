@@ -5,6 +5,9 @@ import (
 	"github.com/kmanuel/minioconnector"
 	"github.com/kmanuel/simple_microservices/go_kit/service/screenshot/src/model"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type ImageService interface {
@@ -33,9 +36,15 @@ func (s screenshotServiceImpl) HandleTask(task *model.Task) error {
 		return err
 	}
 
-	if _, err := s.minioService.UploadFileWithName(outputFilePath, task.ID); err != nil {
+	if _, err := s.minioService.UploadFileWithName(outputFilePath, createFileName(task)); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *model.Task) string {
+	inputFileName := strings.Replace(task.Url, ".", "_", -1)
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_screenshot.jpg"
 }

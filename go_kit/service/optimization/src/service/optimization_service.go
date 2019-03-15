@@ -5,6 +5,9 @@ import (
 	"github.com/kmanuel/simple_microservices/go_kit/service/optimization/src/model"
 	"github.com/prometheus/common/log"
 	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type TaskService interface {
@@ -30,12 +33,18 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = h.minioService.UploadFileWithName(outputFilePath, t.ID)
+	_, err = h.minioService.UploadFileWithName(outputFilePath, createFileName(t))
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func createFileName(task *model.Task) string {
+	inputFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + timestamp + "_optimization.jpg"
 }
 
 func optimizeImage(inputFile string) (string, error) {
