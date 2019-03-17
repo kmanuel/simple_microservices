@@ -26,11 +26,14 @@ var (
 func main() {
 	log.Info("starting crop service")
 
+	log.Info("inputBucketName=" + os.Getenv("INPUT_BUCKET_NAME"))
+
 	minioService := minioconnector.NewMinioService(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
+		os.Getenv("INPUT_BUCKET_NAME"),
+		taskType)
 
 	go startPrometheus()
 	startFaktoryListener(minioService)

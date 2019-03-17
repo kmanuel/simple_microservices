@@ -5,6 +5,7 @@ import (
 	worker "github.com/contribsys/faktory_worker_go"
 	"github.com/google/jsonapi"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/portrait/src/model"
+	"github.com/prometheus/common/log"
 )
 
 type FaktoryListenerService interface {
@@ -13,13 +14,13 @@ type FaktoryListenerService interface {
 
 type faktoryListenerService struct {
 	taskService TaskService
-	taskType string
+	taskType    string
 }
 
 func NewFaktoryListenerService(taskService TaskService, taskType string) FaktoryListenerService {
 	return faktoryListenerService{
 		taskService: taskService,
-		taskType: taskType,
+		taskType:    taskType,
 	}
 }
 
@@ -33,6 +34,7 @@ func (s faktoryListenerService) Start() error {
 		quit = true
 	})
 
+	log.Info("starting to listen for tasks of type=" + s.taskType)
 	mgr.Run()
 
 	return nil

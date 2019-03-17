@@ -19,8 +19,8 @@ type faktoryListenerService struct {
 
 func NewFaktoryListenerService(taskService TaskService, taskType string) FaktoryListenerService {
 	return faktoryListenerService{
-		taskService:       taskService,
-		taskType:          taskType,
+		taskService: taskService,
+		taskType:    taskType,
 	}
 }
 
@@ -34,7 +34,7 @@ func (s faktoryListenerService) Start() error {
 		quit = true
 	})
 
-	log.Info("listening for tasks")
+	log.Info("starting to listen for tasks of type=" + s.taskType)
 	mgr.Run()
 
 	return nil

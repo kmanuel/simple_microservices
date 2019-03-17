@@ -49,18 +49,18 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = h.minioService.UploadFileWithName(croppedFilePath, h.createFileName(t))
+	_, err = h.minioService.UploadFileWithName(croppedFilePath, createFileName(t))
 	if err != nil {
 		log.Error("failed to upload file")
 	}
 	return err
 }
 
-func (h taskService) createFileName(task *model.Task) string {
+func createFileName(task *model.Task) string {
 	inputFileName := strings.Split(task.ImageId, ".")[0]
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
 	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
-	return inputFileName + "_" + timestamp + "_" + h.taskType + "_" + taskParams + ".jpg"
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + taskParams + timestamp + ".jpg"
 }
 
 func cropImage(inputImg string, width int, height int) (string, error) {

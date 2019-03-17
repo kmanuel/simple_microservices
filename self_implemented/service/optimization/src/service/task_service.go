@@ -38,7 +38,7 @@ func (h taskService) Handle(t *model.Task) error {
 		return err
 	}
 
-	_, err = h.minioService.UploadFileWithName(outputFilePath, t.ID)
+	_, err = h.minioService.UploadFileWithName(outputFilePath, createFileName(t))
 	if err != nil {
 		return err
 	}
@@ -46,10 +46,10 @@ func (h taskService) Handle(t *model.Task) error {
 	return nil
 }
 
-func (h taskService) createFileName(task *model.Task) string {
-	inputFileName := strings.Split(task.ImageId, ".")[0]
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
-	return inputFileName + "_" + timestamp + "_" + h.taskType + ".jpg"
+func createFileName(task *model.Task) string {
+	urlFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return urlFileName + timestamp + ".jpg"
 }
 
 func optimizeImage(inputFile string) (string, error) {

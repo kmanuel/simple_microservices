@@ -35,19 +35,17 @@ func NewTaskService(counter *prometheus.CounterVec,
 
 func (h taskService) Handle(t *model.Task) error {
 	h.counter.With(prometheus.Labels{"type": h.taskType}).Inc()
-
-	task := t
+	log.Info("received task")
 
 	outputFile := outputImageLocation + uuid.New().String() + ".jpg"
 
-	err := ExtractMostSignificantImage(task.Url, outputFile)
+	err := ExtractMostSignificantImage(t.Url, outputFile)
 	if err != nil {
 		log.Error("extracting of image failed", err)
 		return err
 	}
 
-	fileName := h.createFileName(t)
-	_, err = h.minioService.UploadFileWithName(outputFile, fileName)
+	_, err = h.minioService.UploadFileWithName(outputFile, createFileName(t))
 	if err != nil {
 		log.Error("upload failed", err)
 		return err
@@ -56,10 +54,13 @@ func (h taskService) Handle(t *model.Task) error {
 	return nil
 }
 
-func (h taskService) createFileName(task *model.Task) string {
-	inputFileName := strings.Replace(task.Url, ".", "_", -1)
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
-	return inputFileName + "_" + timestamp + "_" + h.taskType + ".jpg"
+func createFileName(task *model.Task) string {
+	inputFileName := strings.Replace(task.Url, "http://", "", -1)
+	inputFileName = strings.Replace(inputFileName, "https://", "", -1)
+	inputFileName = strings.Replace(inputFileName, ".", "_", -1)
+	inputFileName = strings.Replace(inputFileName, "/", "_", -1)
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + timestamp + ".jpg"
 }
 
 func ExtractMostSignificantImage(inputUrl string, outputFile string) error {

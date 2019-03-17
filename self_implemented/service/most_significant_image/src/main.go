@@ -41,7 +41,8 @@ func startFaktoryListener() {
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
+		os.Getenv("INPUT_BUCKET_NAME"),
+		"mostsignificantimage")
 
 	var taskService service.TaskService
 	taskService = service.NewTaskService(requests, taskType, minioService)

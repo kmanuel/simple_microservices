@@ -19,7 +19,6 @@ type ProxyHandler struct {
 }
 
 func (h *ProxyHandler) GetFaktoryInfo(w http.ResponseWriter, r *http.Request) {
-	log.Info("getting faktory info")
 	faktoryService := service.NewFaktoryService()
 
 	info, err := faktoryService.Info()
@@ -27,8 +26,6 @@ func (h *ProxyHandler) GetFaktoryInfo(w http.ResponseWriter, r *http.Request) {
 		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	log.Info("got info=", info)
 
 	err = jsonapi.MarshalPayload(w, info)
 	if err != nil {

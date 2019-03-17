@@ -2,16 +2,12 @@ package main
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/kmanuel/minioconnector"
-	"github.com/kmanuel/simple_microservices/self_implemented/service/gateway/src/api/api_image"
-	. "github.com/kmanuel/simple_microservices/self_implemented/service/gateway/src/api/api_root"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/gateway/src/api/api_task"
 	"github.com/kmanuel/simple_microservices/self_implemented/service/gateway/src/service"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"os"
 )
 
 var (
@@ -68,25 +64,10 @@ func registerTaskGauge(typeName string) {
 func startJsonRestApi() {
 	log.Debug("starting REST API")
 
-	minioService := minioconnector.NewMinioService(
-		os.Getenv("MINIO_HOST"),
-		os.Getenv("MINIO_ACCESS_KEY"),
-		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
-
-	rootHandler := &RootHandler{}
-	imageHandler := &api_image.ImageHandler{DispatchCounter: dispatchCounter, MinioService: *minioService}
 	proxyHandler := &api_task.ProxyHandler{DispatchCounter: dispatchCounter}
-	imageTransformationHandler := &api_image.ImageTaskHandler{DispatchCounter: dispatchCounter}
 
 	myRouter := mux.NewRouter().StrictSlash(false)
 
-	myRouter.HandleFunc("/", rootHandler.GetRootResource).Methods("GET")
-
-	myRouter.HandleFunc("/images", imageHandler.UploadImage).Methods("POST")
-	myRouter.HandleFunc("/images/{id}", imageHandler.DownloadImage).Methods("GET")
-	myRouter.HandleFunc("/images/{id}/tasks", imageTransformationHandler.HandleGetTasks).Methods("GET")
-	myRouter.HandleFunc("/tasks", proxyHandler.ProxyToRequestService)
 	myRouter.HandleFunc("/crop", proxyHandler.CreateCropTask)
 	myRouter.HandleFunc("/most_significant_image", proxyHandler.CreateMostSignificantImageTask)
 	myRouter.HandleFunc("/optimization", proxyHandler.CreateOptimizationTask)
