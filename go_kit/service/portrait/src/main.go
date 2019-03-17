@@ -35,15 +35,14 @@ func main() {
 	startFaktory(optimizationService)
 }
 
-
 func initMinio() *minioconnector.MinioService {
 	return minioconnector.NewMinioService(
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
+		os.Getenv("INPUT_BUCKET_NAME"),
+		taskType)
 }
-
 
 func startPrometheus() {
 	prometheus.MustRegister(requests)

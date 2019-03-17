@@ -36,7 +36,8 @@ func initMinio() *minioconnector.MinioService {
 		os.Getenv("MINIO_HOST"),
 		os.Getenv("MINIO_ACCESS_KEY"),
 		os.Getenv("MINIO_SECRET_KEY"),
-		os.Getenv("BUCKET_NAME"))
+		os.Getenv("INPUT_BUCKET_NAME"),
+		taskType)
 }
 
 func startPrometheus() {

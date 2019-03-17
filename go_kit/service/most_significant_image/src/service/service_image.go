@@ -50,9 +50,12 @@ func (s mostSignificantImageService) HandleTask(t *model.Task) error {
 }
 
 func createFileName(task *model.Task) string {
-	inputFileName := strings.Replace(task.Url, ".", "_", -1)
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
-	return inputFileName + "_" + timestamp + "_most_significant_image.jpg"
+	inputFileName := strings.Replace(task.Url, "http://", "", -1)
+	inputFileName = strings.Replace(inputFileName, "https://", "", -1)
+	inputFileName = strings.Replace(inputFileName, ".", "_", -1)
+	inputFileName = strings.Replace(inputFileName, "/", "_", -1)
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + timestamp + ".jpg"
 }
 
 func downloadImage(url string, outputFile string) error {

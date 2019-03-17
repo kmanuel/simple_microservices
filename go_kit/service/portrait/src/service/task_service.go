@@ -44,9 +44,9 @@ func (s optimizationServiceImpl) HandleTask(task *model.Task) error {
 
 func createFileName(task *model.Task) string {
 	inputFileName := strings.Split(task.ImageId, ".")[0]
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
 	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
-	return inputFileName + "_" + timestamp + "_portrait_" + taskParams + ".jpg"
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + taskParams + timestamp + ".jpg"
 }
 
 func extractPortrait(taskId string, inputLocation string, width int, height int) (string, error) {

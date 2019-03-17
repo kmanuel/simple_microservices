@@ -42,9 +42,9 @@ func (h taskService) Handle(t *model.Task) error {
 }
 
 func createFileName(task *model.Task) string {
-	inputFileName := strings.Split(task.ImageId, ".")[0]
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
-	return inputFileName + "_" + timestamp + "_optimization.jpg"
+	urlFileName := strings.Split(task.ImageId, ".")[0]
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return urlFileName + timestamp + ".jpg"
 }
 
 func optimizeImage(inputFile string) (string, error) {
