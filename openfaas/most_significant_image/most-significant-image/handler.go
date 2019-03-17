@@ -2,7 +2,6 @@ package function
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/advancedlogic/GoOse"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
@@ -25,36 +24,40 @@ type Task struct {
 
 func Handle(req []byte) string {
 
-	initMinio()
+	minioService := initMinio()
 
 	task := new(Task)
 	task.ID = uuid.New().String()
 
-	jsonapi.UnmarshalPayload(bytes.NewReader(req), task)
-
-	err := handleTask(task)
+	err := jsonapi.UnmarshalPayload(bytes.NewReader(req), task)
 	if err != nil {
-		log.Error("wowowow, error", err)
+		panic(err)
 	}
 
-	return fmt.Sprintf("oki")
+	err = handleTask(task, *minioService)
+	if err != nil {
+		panic(err)
+	}
+
+	return ""
 }
 
-func initMinio() {
+func initMinio() *minioconnector.MinioService {
 	minioHost := os.Getenv("MINIO_HOST")
 	minioAccessKey := os.Getenv("MINIO_ACCESS_KEY")
 	minioSecret := os.Getenv("MINIO_SECRET_KEY")
-	bucketName := os.Getenv("BUCKET_NAME")
+	bucketName := os.Getenv("INPUT_BUCKET_NAME")
 
 	log.Errorf("initializing minio with host=%s accessKey=%s secret=%s bucketName=%s", minioHost, minioAccessKey, minioSecret, bucketName)
-	minioconnector.Init(
+	return minioconnector.NewMinioService(
 		minioHost,
 		minioAccessKey,
 		minioSecret,
-		bucketName)
+		bucketName,
+		"mostsignificantimage")
 }
 
-func handleTask(t *Task) error {
+func handleTask(t *Task, minioService minioconnector.MinioService) error {
 	task := t
 
 	outputFile := outputImageLocation + uuid.New().String() + ".jpg"
@@ -64,7 +67,7 @@ func handleTask(t *Task) error {
 		return err
 	}
 
-	_, err = minioconnector.UploadFileWithName(outputFile, createFileName(t))
+	_, err = minioService.UploadFileWithName(outputFile, createFileName(t))
 	if err != nil {
 		return err
 	}
@@ -73,9 +76,12 @@ func handleTask(t *Task) error {
 }
 
 func createFileName(task *Task) string {
-	inputFileName := strings.Replace(task.Url, ".", "_", -1)
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
-	return inputFileName + "_" + timestamp + "_most_significant_image.jpg"
+	inputFileName := strings.Replace(task.Url, "http://", "", -1)
+	inputFileName = strings.Replace(inputFileName, "https://", "", -1)
+	inputFileName = strings.Replace(inputFileName, ".", "_", -1)
+	inputFileName = strings.Replace(inputFileName, "/", "_", -1)
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + timestamp + ".jpg"
 }
 
 func ExtractMostSignificantImage(inputUrl string, outputFile string) error {

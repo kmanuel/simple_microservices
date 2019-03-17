@@ -2,7 +2,6 @@ package function
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/google/jsonapi"
 	"github.com/google/uuid"
 	"github.com/kmanuel/minioconnector"
@@ -27,43 +26,46 @@ type Task struct {
 // Handle a serverless request
 func Handle(req []byte) string {
 
-	initMinio()
+	minioService := initMinio()
 
 	task := new(Task)
 	task.ID = uuid.New().String()
 
-	jsonapi.UnmarshalPayload(bytes.NewReader(req), task)
-
-	err := handleTask(task)
+	err := jsonapi.UnmarshalPayload(bytes.NewReader(req), task)
 	if err != nil {
-		log.Error("wowowow, error", err)
+		panic(err)
 	}
 
-	return fmt.Sprintf("oki")
+	err = handleTask(task, *minioService)
+	if err != nil {
+		panic(err)
+	}
+
+	return ""
 }
 
-func initMinio() {
+func initMinio() *minioconnector.MinioService {
 	minioHost := os.Getenv("MINIO_HOST")
 	minioAccessKey := os.Getenv("MINIO_ACCESS_KEY")
 	minioSecret := os.Getenv("MINIO_SECRET_KEY")
-	bucketName := os.Getenv("BUCKET_NAME")
+	bucketName := os.Getenv("INPUT_BUCKET_NAME")
 
 	log.Errorf("initializing minio with host=%s accessKey=%s secret=%s bucketName=%s", minioHost, minioAccessKey, minioSecret, bucketName)
-	minioconnector.Init(
+	return minioconnector.NewMinioService(
 		minioHost,
 		minioAccessKey,
 		minioSecret,
-		bucketName)
+		bucketName,
+		"crop")
 }
 
-func handleTask(task *Task) error {
+func handleTask(task *Task, minioService minioconnector.MinioService) error {
 	imageId := task.ImageId
 	width := task.Width
 	height := task.Height
 
-	inputImg, err := downloadFile(imageId)
+	inputImg, err := minioService.DownloadFile(imageId)
 	if err != nil {
-		log.Error("meh, downloadFile failed")
 		return err
 	}
 
@@ -88,7 +90,7 @@ func handleTask(task *Task) error {
 		return err
 	}
 
-	if _, err = minioconnector.UploadFileWithName(outputFilePath, createFileName(task)); err != nil {
+	if _, err = minioService.UploadFileWithName(outputFilePath, createFileName(task)); err != nil {
 		return err
 	}
 
@@ -98,11 +100,7 @@ func handleTask(task *Task) error {
 
 func createFileName(task *Task) string {
 	inputFileName := strings.Split(task.ImageId, ".")[0]
-	timestamp := strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
 	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
-	return inputFileName + "_" + timestamp + "_crop_" + taskParams + ".jpg"
-}
-
-func downloadFile(objectName string) (string, error) {
-	return minioconnector.DownloadFile(objectName)
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	return inputFileName + "_" + taskParams + timestamp + ".jpg"
 }
