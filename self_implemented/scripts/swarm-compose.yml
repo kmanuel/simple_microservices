@@ -26,7 +26,7 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${PWD}/infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     deploy:
@@ -35,10 +35,12 @@ services:
 
   grafana:
     image: grafana/grafana
+    env_file:
+      - .env
     volumes:
-      - ${PWD}/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-      - ${PWD}/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ${PWD}/grafana/dashboards:/var/lib/grafana/dashboards/
+      - ${PWD}/infrastructure/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - ${PWD}/infrastructure/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ${PWD}/infrastructure/grafana/dashboards:/var/lib/grafana/dashboards/
     ports:
       - "3000:3000"
     deploy:

@@ -36,6 +36,8 @@ services:
 
   grafana:
     image: grafana/grafana
+    env_file:
+      - .env
     volumes:
       - ${PWD}/infrastructure/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
       - ${PWD}/infrastructure/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
