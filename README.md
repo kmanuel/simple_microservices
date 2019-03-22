@@ -16,4 +16,4 @@ See `./go_kit/README.md`
 
 ### With [OpenFaaS](https://www.openfaas.com/)
 
-See `./openfaas/README.md`
+See `./openfaas/README.md `
