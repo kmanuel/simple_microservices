@@ -23,12 +23,25 @@ services:
       restart_policy:
         condition: on-failure
 
+  alertmanager:
+    image: prom/alertmanager
+    volumes:
+      - ${PWD}/infrastructure/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
   prometheus:
     image: prom/prometheus
     volumes:
       - ${PWD}/infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${PWD}/infrastructure/prometheus/alerts.yml:/etc/prometheus/alerts.yml
     ports:
       - "9090:9090"
+    depends_on:
+      - "alertmanager"
     deploy:
       restart_policy:
         condition: on-failure
@@ -120,3 +133,10 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
+
+  scale-service:
+    image: swarm_scale
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8085:8085"

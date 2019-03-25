@@ -1,3 +1,13 @@
+rule_files:
+  - 'alerts.yml'
+
+alerting:
+  alertmanagers:
+    - schema: http
+      path_prefix: /alertmanager
+      static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   - job_name: 'crop_service'
     scrape_interval: 5s

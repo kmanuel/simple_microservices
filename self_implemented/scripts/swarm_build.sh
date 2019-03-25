@@ -29,6 +29,12 @@ cd service/screenshot
 docker build -t swarm_screenshot .
 cd ../..
 
+go build -ldflags "-linkmode external -extldflags -static" -o service/screenshot/app service/screenshot/main.go
+cd service/scale_service
+docker build -t swarm_scale .
+cd ../..
+
+
 
 go build -ldflags "-linkmode external -extldflags -static" -o service/gateway/app service/gateway/main.go
 cd service/gateway

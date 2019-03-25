@@ -1,0 +1,7 @@
+route:
+  receiver: dummy
+
+receivers:
+  - name: dummy
+    webhook_configs:
+      - url: 'http://scale-service:8085'
