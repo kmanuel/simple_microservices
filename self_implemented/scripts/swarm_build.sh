@@ -40,3 +40,7 @@ go build -ldflags "-linkmode external -extldflags -static" -o service/gateway/ap
 cd service/gateway
 docker build -t swarm_gateway .
 cd ../..
+
+cd testpage
+docker build -t testpage .
+cd ../..

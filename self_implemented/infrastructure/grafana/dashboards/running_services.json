@@ -15,7 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "iteration": 1553960817866,
+  "iteration": 1553965084857,
   "links": [],
   "panels": [
     {
@@ -89,7 +89,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Pending Crop Tasks",
+      "title": "Crop Tasks Pending ",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -172,7 +172,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Pending Most Significant Image Tasks",
+      "title": "Most Significant Image Tasks Pending ",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -255,7 +255,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Portrait Crop Tasks",
+      "title": "Portrait Tasks Pending",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -338,7 +338,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Pending Optimization Tasks",
+      "title": "Optimization Tasks Pending ",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -411,7 +411,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(portrait_tasks_pending)",
+          "expr": "sum(screenshot_tasks_pending)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "",
@@ -421,7 +421,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Pending Portrait Tasks",
+      "title": "Screenshot Tasks Pending",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -529,6 +529,50 @@
         "x": 8,
         "y": 5
       },
+      "id": 21,
+      "links": [],
+      "options": {
+        "maxValue": "1",
+        "minValue": 0,
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "thresholds": [
+          {
+            "color": "#7EB26D",
+            "index": 0,
+            "value": null
+          }
+        ],
+        "valueMappings": [],
+        "valueOptions": {
+          "decimals": null,
+          "prefix": "",
+          "stat": "current",
+          "suffix": "",
+          "unit": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(up{job=\"portrait_service\"})",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "refId": "A"
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Portrait Service Instances",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 5
+      },
       "id": 18,
       "links": [],
       "options": {
@@ -570,7 +614,7 @@
       "gridPos": {
         "h": 5,
         "w": 4,
-        "x": 12,
+        "x": 16,
         "y": 5
       },
       "id": 19,
@@ -607,50 +651,6 @@
       "timeFrom": null,
       "timeShift": null,
       "title": "Screenshot Service Instances",
-      "type": "gauge"
-    },
-    {
-      "datasource": "Prometheus",
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 16,
-        "y": 5
-      },
-      "id": 21,
-      "links": [],
-      "options": {
-        "maxValue": "1",
-        "minValue": 0,
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "thresholds": [
-          {
-            "color": "#7EB26D",
-            "index": 0,
-            "value": null
-          }
-        ],
-        "valueMappings": [],
-        "valueOptions": {
-          "decimals": null,
-          "prefix": "",
-          "stat": "current",
-          "suffix": "",
-          "unit": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "sum(up{job=\"portrait_service\"})",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Portrait Service Instances",
       "type": "gauge"
     }
   ],

@@ -11,11 +11,11 @@ groups:
         labels:
           severity: critical
       - alert: ManyMostSignificantImageTasksPending
-        expr: sum(up{job="most_significant_iamge_service"}) * 10 < sum(most_significant_image_tasks_pending) + 1
+        expr: sum(up{job="most_significant_image_service"}) * 10 < sum(most_significant_image_tasks_pending) + 1
         labels:
           severity: critical
       - alert: TooMostSignificantImageInstances
-        expr: sum(up{job="most_significant_iamge_service"}) * 5 > sum(most_significant_image_tasks_pending) + 5
+        expr: sum(up{job="most_significant_image_service"}) * 5 > sum(most_significant_image_tasks_pending) + 5
         labels:
           severity: critical
       - alert: ManyOptimizationTasksPending

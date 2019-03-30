@@ -146,3 +146,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8085:8085"
+
+  testpage:
+    image: testpage
+    ports:
+      - "9999:80"
