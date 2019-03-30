@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/alertmanager/template"
 	"github.com/prometheus/common/log"
 	"net/http"
 	"os/exec"
@@ -28,56 +30,85 @@ type Alert struct {
 	EndsAt      string            `json:"EndsAt,omitempty"`
 }
 
+var swarmPrefix = "self_impl_swarm_"
+
+type responseJSON struct {
+	Status  int
+	Message string
+}
+
+func asJson(w http.ResponseWriter, status int, message string) {
+	data := responseJSON{
+		Status:  status,
+		Message: message,
+	}
+	bytes, _ := json.Marshal(data)
+	json := string(bytes[:])
+
+	w.WriteHeader(status)
+	fmt.Fprint(w, json)
+}
+
 func main() {
 	myRouter := mux.NewRouter().StrictSlash(false)
 
 	myRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-
-		dec := json.NewDecoder(r.Body)
 		defer r.Body.Close()
 
-		var hookMessage HookMessage
-		err := dec.Decode(&hookMessage)
+		data := template.Data{}
+		err := json.NewDecoder(r.Body).Decode(&data)
 		if err != nil {
 			http.Error(w, err.Error(), 400)
 		}
 
-		err = handleHookMessage(hookMessage)
+		err = handleHookMessage(data)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 		}
+
+		asJson(w, http.StatusOK, "success")
+
 	})
 
 	log.Fatal(http.ListenAndServe(":8085", myRouter))
 }
 
-func handleHookMessage(message HookMessage) error {
-	log.Info("received hookMessage: ", message)
+func handleHookMessage(message template.Data) error {
+	log.Info("received hookMessage123: ", message)
 
 	for _, alert := range message.Alerts {
 		alertName := alert.Labels["alertname"]
 		log.Info("checking alertName=" + alertName)
 		switch alertName {
+
 		case "ManyCropTasksPending":
-			return scaleUp("crop")
-		case "ManyMostSignificantImageTasksPending":
-			return scaleUp("most_significant_image")
-		case "ManyOptimizationTasksPending":
-			return scaleUp("optimization")
-		case "ManyScreenshotTasksPending":
-			return scaleUp("screenshot")
+			scaleUp("crop")
+			continue
 		case "TooManyCropInstances":
-			return scaleDown("crop")
-		case "TooManyMostSignificantImageInstances":
+			scaleDown("crop")
+			continue
+		case "ManyMostSignificantImageTasksPending":
+			scaleUp("most_significant_image")
+			continue
+		case "TooMostSignificantImageInstances":
 			return scaleDown("most_significant_image")
+			continue
+		case "ManyOptimizationTasksPending":
+			scaleUp("optimization")
+			continue
 		case "TooManyOptimizationInstances":
-			return scaleDown("optimization")
+			scaleDown("optimization")
+			continue
+		case "ManyScreenshotTasksPending":
+			scaleUp("screenshot")
+			continue
 		case "TooManyScreenshotInstances":
-			return scaleDown("screenshot")
+			scaleDown("screenshot")
+			continue
 		}
+
 	}
 
-	log.Info("found no matching service to scale")
 	return nil
 }
 
@@ -90,6 +121,7 @@ func scaleDown(serviceName string) error {
 }
 
 func scaleTo(serviceName string, instanceNum int) error {
-	scaleCmd := exec.Command("docker", "service", "scale", "-d", "self_impl_swarm_"+serviceName+"="+strconv.Itoa(instanceNum))
+	log.Info("scaling service " + serviceName + " to " + strconv.Itoa(instanceNum) + " instances.")
+	scaleCmd := exec.Command("docker", "service", "scale", "-d", swarmPrefix+serviceName+"="+strconv.Itoa(instanceNum))
 	return scaleCmd.Run()
 }

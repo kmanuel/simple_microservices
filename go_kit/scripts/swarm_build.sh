@@ -20,6 +20,11 @@ cd service/screenshot
 docker build -t swarm_screenshot .
 cd ../..
 
+cd service/scale_service
+docker build -t swarm_scale_service .
+cd ../..
+
+
 cd service/gateway
 docker build -t swarm_gateway .
 cd ..

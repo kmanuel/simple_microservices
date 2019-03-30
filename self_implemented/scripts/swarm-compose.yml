@@ -29,6 +29,8 @@ services:
       - ${PWD}/infrastructure/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     ports:
       - "9093:9093"
+    depends_on:
+      - "scale-service"
     deploy:
       restart_policy:
         condition: on-failure

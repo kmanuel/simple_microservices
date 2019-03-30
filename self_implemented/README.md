@@ -5,8 +5,6 @@
 
 * Linux
 
-* Python 3
-
 * [Docker swarm](https://www.python.org/download/releases/3.0/) running on the machine
 
 ## How to run
