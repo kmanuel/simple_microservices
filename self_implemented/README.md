@@ -126,5 +126,4 @@ A [Grafana dashboard](`http://127.0.0.1:3000`) displays simple metrics provided 
 
 ### Scaling
 
-Is achieved by a simple python script (`./scripts/scale_service.py`) running on the host machine.  
-This script periodically polls the stack for the number of pending tasks for each service, prints the result to the console and scales a service up if the number exceeds a certain threshold (10 * #services_for__task). 
+On high/low load the AlertManager will fire events. These events are received and handled (down-/upscale services) via the scale-service.  
