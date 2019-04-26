@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for (( i=0; i<10; i++ ))
+do
+    docker service scale self_impl_swarm_crop=1 > /dev/null
+    rm imgs/crop/*.jpg
+    python3 scripts/performance_test.py 250
+done
