@@ -1,0 +1,82 @@
+version: '3'
+services:
+  gateway:
+    image: swarm_gateway
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  crop:
+    image: swarm_crop
+    env_file:
+      - .env
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  most_significant_image:
+    image: swarm_most_significant_image
+    env_file:
+      - .env
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  optimization:
+    image: swarm_optimization
+    env_file:
+      - .env
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  portrait:
+    image: swarm_portrait
+    env_file:
+      - .env
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  screenshot:
+    image: swarm_screenshot
+    env_file:
+      - .env
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  scale-service:
+    image: swarm_scale
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8085:8085"
