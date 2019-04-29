@@ -7,13 +7,19 @@ import time
 import subprocess
 
 verbose = False
+number_of_runs = 10
+request_counts = [1, 10, 100]
+with_resource_constraints = False
+
+
+stats_file = open('performance_test.txt', 'w+', buffering=1)
 
 def create_tasks(request_count):
     data = """{
         "data": {
             "type": "crop_task",
             "attributes": {
-                "image_id": "surfcat.jpg",
+                "image_id": "surf_cat.jpg",
                 "width": 50,
                 "height": 10
             }
@@ -29,28 +35,38 @@ def create_tasks(request_count):
 def time_till_all_tasks_done(request_count):
     start = time.time()
     while not is_all_tasks_finished():
+        if time.time() - start >= 60:
+            return -1
         time.sleep(0.25)
-    return time.time() - start
+
+    return (time.time() - start)
 
 
 def is_all_tasks_finished():
     return get_busy_task_count() == 0 and get_queue_task_count() == 0
 
+def get_processed_task_count():
+    response = requests.get('http://127.0.0.1:7420/queues')
+    soup = bs4.BeautifulSoup(response.content, 'html.parser')
+    task_count = soup.select('li.processed.col-sm-1 span.count')
+    return int(task_count[0].text.strip().replace(',', ''))
+
+
 def get_busy_task_count():
     response = requests.get('http://127.0.0.1:7420/queues')
     soup = bs4.BeautifulSoup(response.content, 'html.parser')
     task_count = soup.select('li.busy.col-sm-1 > a > span.count')
-    return int(task_count[0].text.strip())
+    return int(task_count[0].text.strip().replace(',', ''))
 
 def get_queue_task_count():
     response = requests.get('http://127.0.0.1:7420/queues')
     soup = bs4.BeautifulSoup(response.content, 'html.parser')
     task_count = soup.select('li.enqueued.col-sm-1 > a > span.count')
-    return int(task_count[0].text.strip())
+    return int(task_count[0].text.strip().replace(',', ''))
 
 
 
-def deploy_stack(with_resource_constraints):
+def deploy_stack():
     os.system('docker stack rm self_impl_swarm > /dev/null')
 
     if with_resource_constraints:
@@ -76,31 +92,44 @@ def deploy_stack(with_resource_constraints):
 
 
 def clear_img_dir():
-    os.system('rm -rf ./imgs/crop > /dev/null 2>&1 &')
+    os.system('rm -rf ./imgs/crop')
 
 def setup_img_dir():
-    os.system('mkdir ./imgs/crop > /dev/null 2>&1 &')
+    os.system('mkdir ./imgs/crop')
 
+
+def scale_back():
+    os.system('docker service scale self_impl_crop=1')
 
 def perform_run(request_count,
-                with_resource_constraints,
                 with_auto_scale):
+    print('running request_count=' + str(request_count) + ' resource_constraints=' + str(with_resource_constraints) + ' auto_scale=' + str(with_auto_scale))
     clear_img_dir()
     setup_img_dir()
-    deploy_stack(with_resource_constraints=with_resource_constraints)
     create_tasks(request_count)
     processing_time = time_till_all_tasks_done(request_count)
-    print(str(request_count) + ";" + str(with_resource_constraints) + ";" + str(with_auto_scale) + ';' + str(processing_time))
+    res = str(request_count) + ";" + str(with_resource_constraints) + ";" + str(with_auto_scale) + ';' + str(processing_time)
+    stats_file.write(res + '\n')
+    stats_file.flush()
+    if (processing_time < 0):
+        deploy_stack()
+    else:
+        scale_back()
 
 
-
-
-number_of_runs = 10
-request_counts = [1, 10, 100, 250]
-
+deploy_stack()
 for i in range(0, number_of_runs):
+    print('run nr: ' + str(i))
     for count in request_counts:
-        perform_run(request_count=count, with_resource_constraints=False, with_auto_scale=False)
-        perform_run(request_count=count, with_resource_constraints=False, with_auto_scale=True)
-        perform_run(request_count=count, with_resource_constraints=True, with_auto_scale=False)
-        perform_run(request_count=count, with_resource_constraints=True, with_auto_scale=True)
+        perform_run(request_count=count, with_auto_scale=False)
+        perform_run (request_count=count, with_auto_scale=True)
+
+
+with_resource_constraints = True
+
+deploy_stack()
+for i in range(0, number_of_runs):
+    print('run nr: ' + str(i))
+    for count in request_counts:
+        perform_run(request_count=count, with_auto_scale=False)
+        perform_run (request_count=count, with_auto_scale=True)
