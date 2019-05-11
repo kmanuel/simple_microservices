@@ -1,0 +1,26 @@
+version: '3'
+services:
+  faktory:
+    image: contribsys/faktory
+    ports:
+      - "7419:7419"
+      - "7420:7420"
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  crop:
+    image: swarm_crop
+    env_file:
+      - .env
+    depends_on:
+      - "minio"
+      - "faktory"
+      - "prometheus"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 350M
+      restart_policy:
+        condition: on-failure

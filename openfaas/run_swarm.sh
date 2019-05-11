@@ -1,5 +1,6 @@
 cd faas
 sh deploy_stack.sh
+cd ..
 
 docker service create \
     -d \
@@ -11,7 +12,7 @@ docker service create \
     minio/minio:RELEASE.2018-12-06T01-27-43Z \
     server /data
 
-cd ../crop
+cd crop
 faas-cli build -f crop.yml
 faas-cli deploy -f crop.yml
 
