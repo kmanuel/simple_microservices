@@ -101,6 +101,6 @@ func handleTask(task *Task, minioService minioconnector.MinioService) error {
 func createFileName(task *Task) string {
 	inputFileName := strings.Split(task.ImageId, ".")[0]
 	taskParams := "height_" + strconv.Itoa(task.Height) + "_width_" + strconv.Itoa(task.Width)
-	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+	timestamp := "_" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	return inputFileName + "_" + taskParams + timestamp + ".jpg"
 }
